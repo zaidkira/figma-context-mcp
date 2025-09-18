@@ -11,138 +11,79 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="header-inner">
-      <div class="brand">coffee</div>
-      <nav class="menu" role="navigation" aria-label="Primary">
-        <a href="#">home</a>
-        <a href="#">menu</a>
-        <a href="#">about</a>
-        <a href="#">contact</a>
-      </nav>
-      <div class="search" role="button" aria-label="Search">
-        <img alt="" src="assets/images/icon-search-1.svg">
-        <img alt="" src="assets/images/icon-search-2.svg">
-      </div>
-    </div>
+    <div class="brand">Coffee</div>
+    <nav class="menu">
+      <a href="#home">Home</a>
+      <a href="#menu">Menu</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="dashboard.html" target="_blank">Dashboard</a>
   </header>
 
-  <section class="hero">
-    <div class="hero-overlay"></div>
-    <img class="hero-bg" src="assets/images/hero-bg.png" alt="">
+  <section class="hero" id="home">
+    <img src="assets/images/hero-bg.png" alt="">
     <div class="hero-content">
-      <h1 class="welcome">Welcome!!</h1>
-      <p class="motto-label">Our motto is :</p>
-      <p class="motto-text">“A little crazy, a lot of coffee.”</p>
-      <button class="btn-primary">Order Now</button>
+      <h1>Welcome!!</h1>
+      <p>“A little crazy, a lot of coffee.”</p>
+      <a class="btn-primary" href="#menu">Order Now</a>
     </div>
   </section>
 
-  <main class="menu-section">
-    <h2 class="section-title">our menu</h2>
-
+  <main class="menu-section" id="menu">
+    <h2 class="section-title">Our Menu</h2>
     <div class="card-grid">
       <article class="card">
-        <div class="card-media">
-          <div class="media-mask"></div>
-          <img src="assets/images/card-espresso.png" alt="Espresso">
-        </div>
-        <div class="card-body">
-          <div class="card-text">
-            <h3 class="card-title">Espresso</h3>
-            <p class="card-sub">A strong, concentrated coffee shot.</p>
-          </div>
-          <div class="card-cta">
-            <div class="price">50 DA</div>
-            <button class="btn-chip">Order Now</button>
-          </div>
+        <img src="assets/images/card-espresso.png" alt="Espresso">
+        <h3 class="card-title">Espresso</h3>
+        <p class="card-sub">A strong, concentrated coffee shot.</p>
+        <div class="card-cta">
+          <span class="price">50 DA</span>
+          <button class="btn-chip">Order Now</button>
         </div>
       </article>
 
       <article class="card">
-        <div class="card-media">
-          <div class="media-mask"></div>
-          <img src="assets/images/card-cappuccino.png" alt="Cappuccino">
-        </div>
-        <div class="card-body">
-          <div class="card-text">
-            <h3 class="card-title">Cappuccino</h3>
-            <p class="card-sub">Espresso with a thick layer of milk foam.</p>
-          </div>
-          <div class="card-cta">
-            <div class="price">50 DA</div>
-            <button class="btn-chip">Order Now</button>
-          </div>
+        <img src="assets/images/card-cappuccino.png" alt="Cappuccino">
+        <h3 class="card-title">Cappuccino</h3>
+        <p class="card-sub">Espresso with steamed milk and foam.</p>
+        <div class="card-cta">
+          <span class="price">70 DA</span>
+          <button class="btn-chip">Order Now</button>
         </div>
       </article>
 
       <article class="card">
-        <div class="card-media">
-          <div class="media-mask"></div>
-          <img src="assets/images/card-drip-1078a0.png" alt="Drip Coffee">
-        </div>
-        <div class="card-body">
-          <div class="card-text">
-            <h3 class="card-title">Drip Coffee</h3>
-            <p class="card-sub">Our classic brewed coffee, rich and smooth.</p>
-          </div>
-          <div class="card-cta">
-            <div class="price">50 DA</div>
-            <button class="btn-chip">Order Now</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="card-media">
-          <div class="media-mask"></div>
-          <img src="assets/images/card-latte.png" alt="Latte">
-        </div>
-        <div class="card-body">
-          <div class="card-text">
-            <h3 class="card-title">Latte</h3>
-            <p class="card-sub">Espresso with steamed milk.</p>
-          </div>
-          <div class="card-cta">
-            <div class="price">50 DA</div>
-            <button class="btn-chip">Order Now</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="card-media">
-          <div class="media-mask"></div>
-          <img src="assets/images/card-mocha.png" alt="Mocha">
-        </div>
-        <div class="card-body">
-          <div class="card-text">
-            <h3 class="card-title">Mocha</h3>
-            <p class="card-sub">Chocolate-flavored latte</p>
-          </div>
-          <div class="card-cta">
-            <div class="price">50 DA</div>
-            <button class="btn-chip">Order Now</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="card-media">
-          <div class="media-mask"></div>
-          <img src="assets/images/card-iced-tea-5141e6.png" alt="Iced Tea">
-        </div>
-        <div class="card-body">
-          <div class="card-text">
-            <h3 class="card-title">Iced Tea</h3>
-            <p class="card-sub">A refreshing brew of black tea over ice.</p>
-          </div>
-          <div class="card-cta">
-            <div class="price">50 DA</div>
-            <button class="btn-chip">Order Now</button>
-          </div>
+        <img src="assets/images/card-latte.png" alt="Latte">
+        <h3 class="card-title">Latte</h3>
+        <p class="card-sub">Smooth coffee with milk.</p>
+        <div class="card-cta">
+          <span class="price">65 DA</span>
+          <button class="btn-chip">Order Now</button>
         </div>
       </article>
     </div>
   </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="overlay"></div>
+  <div class="modal" id="order-modal">
+    <div class="modal-box">
+      <button class="modal-close" id="modal-close">X</button>
+      <div>
+        <h2>Your Order:</h2>
+        <p id="order-item">—</p>
+        <h2>Quantity:</h2>
+        <div class="qty-controls">
+          <button id="decrease">-</button>
+          <span id="order-qty">1</span>
+          <button id="increase">+</button>
+        </div>
+      </div>
+      <button class="order-btn" id="confirm-order">Order Now</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
