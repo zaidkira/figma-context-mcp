@@ -2,10 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const grid = document.getElementById('orders-grid');
   if (!grid) return;
 
-  // Use the correct live URL for your Render server
   const API_URL = 'https://coffee-shop-backend-00m8.onrender.com/api/orders';
-  
-  // Loading state management
+  const EXPORT_API_URL = 'https://coffee-shop-backend-00m8.onrender.com/api/orders/completed-canceled';
+
   let isLoading = false;
 
   function showLoading() {
@@ -15,7 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchAndRenderOrders() {
     if (isLoading) return;
     isLoading = true;
-    showLoading();
+    
+    // Only show the main loading spinner on the first load
+    if (grid.innerHTML === '') {
+        showLoading();
+    }
     
     try {
       const response = await fetch(API_URL);
@@ -42,10 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'order-card';
       card.dataset.id = order._id;
 
+      // Add a section for notes if they exist
+      const notesHTML = order.notes ? `<div class="notes"><strong>Notes:</strong> ${order.notes}</div>` : '';
+
       card.innerHTML = `
         <div class="table">${order.table ? 'Table ' + order.table : 'Walk-in'}</div>
         <div class="item">${order.name}</div>
         <div class="qty1">x${order.qty}</div>
+        ${notesHTML}
         <div class="actions">
           <button class="btn-done" data-status="completed">✅ Completed</button>
           <button class="btn-cancel" data-status="canceled">❌ Cancel</button>
@@ -64,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const newStatus = button.dataset.status;
 
     try {
-      // Note: We are now sending updates to a specific order ID
-      await fetch(`${API_URL.replace('/api/orders', '/api/orders/')}${orderId}`, {
+      // CORRECTED: Use a cleaner way to build the URL for the update
+      await fetch(`${API_URL}/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -80,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // CSV export functionality
   function toCsv(rows) {
-    return rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+    return rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
   }
   
   function download(filename, text) {
@@ -99,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Export button functionality
   const btnAll = document.getElementById('export-all');
   if (btnAll) {
     btnAll.addEventListener('click', async function() {
@@ -107,18 +113,19 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAll.textContent = 'Exporting...';
         btnAll.disabled = true;
         
-        const response = await fetch(`${API_URL}/completed-canceled`);
-        if (!response.ok) throw new Error('Failed to fetch');
+        const response = await fetch(EXPORT_API_URL);
+        if (!response.ok) throw new Error('Failed to fetch completed/canceled orders');
         const orders = await response.json();
         
-        const header = ['Name','Qty','Status','Table','Ordered At','Completed/Canceled At'];
+        const header = ['Name', 'Qty', 'Status', 'Table', 'Notes', 'Ordered At', 'Completed/Canceled At'];
         const rows = orders.map(o => [
           o.name || '', 
           o.qty || 1, 
           o.status || '', 
           o.table || 'Walk-in',
+          o.notes || '',
           formatTime(o.createdAt), 
-          formatTime(o.completedAt || o.updatedAt)
+          formatTime(o.updatedAt)
         ]);
         
         download('orders_completed_canceled.csv', toCsv([header].concat(rows)));
@@ -133,5 +140,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   fetchAndRenderOrders();
-  setInterval(fetchAndRenderOrders, 3000);
+  setInterval(fetchAndRenderOrders, 5000); // Check for new orders every 5 seconds
 });

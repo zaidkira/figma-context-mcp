@@ -122,6 +122,17 @@
   width: 200px; 
 }
 
+/* Notes styling */
+.order-card .notes {
+  position: absolute;
+  left: 36px;
+  top: 200px;
+  font: 500 14px/1.4 'Poppins', sans-serif;
+  color: #666;
+  max-width: 250px;
+  word-wrap: break-word;
+}
+
 /* Loading spinner */
 .loading-spinner {
   display: flex;

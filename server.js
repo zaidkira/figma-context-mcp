@@ -16,15 +16,17 @@ mongoose.connect(mongoDBConnectionString)
   .catch((error) => console.error('❌ Error connecting to MongoDB:', error));
 
 // --- Mongoose Schema & Model ---
+// NEW: Added the 'notes' field to the schema
 const orderSchema = new mongoose.Schema({
   table: String,
   name: String,
   qty: Number,
-  status: { type: String, default: 'pending' },
+  status: String,
+  notes: String, // Added this line
   createdAt: { type: Date, default: Date.now },
-  completedAt: { type: Date, default: null },
-  notes: { type: String, default: '' }
+  updatedAt: { type: Date, default: Date.now }
 });
+
 const Order = mongoose.model('Order', orderSchema);
 
 // --- Test Route ---
@@ -33,6 +35,8 @@ app.get('/', (req, res) => {
 });
 
 // --- API Endpoints ---
+
+// GET route to fetch all PENDING orders for the dashboard
 app.get('/api/orders', async (req, res) => {
   try {
     const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -42,13 +46,37 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
+// NEW: GET route to fetch ALL orders for analytics
+app.get('/api/orders/all', async (req, res) => {
+  try {
+    const allOrders = await Order.find({}).sort({ createdAt: -1 });
+    res.json(allOrders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch all orders' });
+  }
+});
+
+// NEW: GET route to fetch completed/canceled orders for CSV export
+app.get('/api/orders/completed-canceled', async (req, res) => {
+  try {
+    const finishedOrders = await Order.find({ 
+      status: { $in: ['completed', 'canceled'] } 
+    }).sort({ updatedAt: -1 });
+    res.json(finishedOrders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch completed/canceled orders' });
+  }
+});
+
+// POST route to create a new order
 app.post('/api/orders', async (req, res) => {
   try {
     const newOrder = new Order({
       table: req.body.table,
       name: req.body.name,
       qty: req.body.qty,
-      status: 'pending'
+      status: 'pending',
+      notes: req.body.notes // Added this line
     });
     const savedOrder = await newOrder.save();
     res.status(201).json(savedOrder);
@@ -57,43 +85,15 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// PATCH route to update an order's status
 app.patch('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const updateData = { status };
-    
-    // Set completedAt timestamp when order is completed or canceled
-    if (status === 'completed' || status === 'canceled') {
-      updateData.completedAt = new Date();
-    }
-    
-    const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true });
+    const updatedOrder = await Order.findByIdAndUpdate(id, { status: status, updatedAt: Date.now() }, { new: true });
     res.json(updatedOrder);
   } catch (error) {
     res.status(400).json({ message: 'Failed to update order' });
-  }
-});
-
-// GET route to fetch completed and canceled orders for CSV export
-app.get('/api/orders/completed-canceled', async (req, res) => {
-  try {
-    const completedCanceledOrders = await Order.find({ 
-      status: { $in: ['completed', 'canceled'] } 
-    }).sort({ completedAt: -1 });
-    res.json(completedCanceledOrders);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch completed/canceled orders' });
-  }
-});
-
-// GET route to fetch all orders for analytics
-app.get('/api/orders/all', async (req, res) => {
-  try {
-    const allOrders = await Order.find({}).sort({ createdAt: -1 });
-    res.json(allOrders);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch all orders' });
   }
 });
 

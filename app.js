@@ -7,7 +7,6 @@ const confirmBtn = document.getElementById("confirm-order");
 
 const urlParams = new URLSearchParams(window.location.search);
 const tableNumber = urlParams.get('table');
-const tableSelect = document.getElementById('table-select');
 const orderNotes = document.getElementById('order-notes');
 
 let currentQty = 1;
@@ -58,13 +57,12 @@ document.getElementById("decrease").addEventListener("click", () => {
 });
 
 confirmBtn.addEventListener("click", async () => {
-  const selectedTable = tableSelect ? tableSelect.value : tableNumber;
   const notes = orderNotes ? orderNotes.value.trim() : '';
   
   const order = {
     name: orderItem.textContent,
     qty: currentQty,
-    table: selectedTable || 'Walk-in',
+    table: tableNumber || 'Walk-in',
     notes: notes
   };
 
