@@ -405,14 +405,6 @@
   color: var(--text-primary);
   font-weight: 600;
   font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#welcome-user::before {
-  content: '👤';
-  font-size: 16px;
 }
 
 .logout-btn {
