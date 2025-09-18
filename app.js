@@ -133,33 +133,30 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
       }
 
-      // Create order data for each item in cart
-      const orders = cart.map(item => ({
-          name: item.name,
-          qty: item.qty,
+      // Create order data in the format the server expects
+      const orderData = {
           table: tableNumber,
-          notes: ''
-      }));
+          notes: '',
+          items: cart.map(item => ({
+              name: item.name,
+              qty: item.qty
+          }))
+      };
 
       try {
           placeOrderBtn.textContent = 'Sending...';
           placeOrderBtn.disabled = true;
 
-          // Send each order to the server
-          const promises = orders.map(order => 
-              fetch('https://coffee-shop-backend-00m8.onrender.com/api/orders', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(order),
-              })
-          );
+          // Send the order to the server
+          const response = await fetch('https://coffee-shop-backend-00m8.onrender.com/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderData),
+          });
 
-          const responses = await Promise.all(promises);
-          
-          // Check if all orders were successful
-          const failedOrders = responses.filter(response => !response.ok);
-          if (failedOrders.length > 0) {
-              throw new Error(`${failedOrders.length} orders failed to send`);
+          if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(`Server error: ${errorData.message || response.statusText}`);
           }
 
           showToast("✅ All orders placed successfully!");
