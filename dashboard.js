@@ -67,21 +67,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!button) return;
 
     const card = button.closest('.order-card');
+    if (!card) return;
+    
     const orderId = card.dataset.id;
     const newStatus = button.dataset.status;
+    
+    if (!orderId || !newStatus) {
+      console.error('Missing order ID or status');
+      return;
+    }
 
     try {
-      // CORRECTED: Use a cleaner way to build the URL for the update
-      await fetch(`${API_URL}/${orderId}`, {
+      // Disable button during update
+      button.disabled = true;
+      button.textContent = 'Updating...';
+      
+      const response = await fetch(`${API_URL}/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Success - animate card removal
       card.style.opacity = '0';
+      card.style.transform = 'scale(0.95)';
       setTimeout(() => card.remove(), 300);
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('Could not update order.');
+      alert('Could not update order. Please try again.');
+      
+      // Reset button state
+      button.disabled = false;
+      button.textContent = newStatus === 'completed' ? '✅ Completed' : '❌ Cancel';
     }
   });
 
