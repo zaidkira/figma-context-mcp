@@ -1,4 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Check authentication
+  if (localStorage.getItem('dashboard_logged_in') !== 'true') {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  // Update welcome message
+  const user = localStorage.getItem('dashboard_user') || 'Admin';
+  const welcomeUser = document.getElementById('welcome-user');
+  if (welcomeUser) {
+    welcomeUser.textContent = `Welcome, ${user}`;
+  }
+
+  // Logout functionality
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('dashboard_logged_in');
+      localStorage.removeItem('dashboard_user');
+      window.location.href = 'login.html';
+    });
+  }
+
   const grid = document.getElementById('orders-grid');
   if (!grid) return;
 
