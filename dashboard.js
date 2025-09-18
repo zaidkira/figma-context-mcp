@@ -40,25 +40,55 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Group orders by table and creation time (cart orders)
+    const cartGroups = {};
     orders.forEach(order => {
-      const card = document.createElement('div');
-      card.className = 'order-card';
-      card.dataset.id = order._id;
+      const cartKey = `${order.table || 'Walk-in'}_${new Date(order.createdAt).toISOString().split('T')[0]}_${Math.floor(new Date(order.createdAt).getTime() / (5 * 60 * 1000))}`; // Group by 5-minute windows
+      if (!cartGroups[cartKey]) {
+        cartGroups[cartKey] = {
+          table: order.table || 'Walk-in',
+          notes: order.notes || '',
+          createdAt: order.createdAt,
+          orders: []
+        };
+      }
+      cartGroups[cartKey].orders.push(order);
+    });
 
-      // Add a section for notes if they exist
-      const notesHTML = order.notes ? `<div class="notes"><strong>Notes:</strong> ${order.notes}</div>` : '';
+    // Render each cart as a separate box
+    Object.values(cartGroups).forEach(cart => {
+      const cartCard = document.createElement('div');
+      cartCard.className = 'cart-order-card';
+      
+      // Sort orders by creation time
+      cart.orders.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      
+      const itemsHTML = cart.orders.map(order => `
+        <div class="cart-item">
+          <span class="item-name">${order.name}</span>
+          <span class="item-qty">x${order.qty}</span>
+        </div>
+      `).join('');
 
-      card.innerHTML = `
-        <div class="table">${order.table ? 'Table ' + order.table : 'Walk-in'}</div>
-        <div class="item">${order.name}</div>
-        <div class="qty1">x${order.qty}</div>
+      const notesHTML = cart.notes ? `<div class="cart-notes"><strong>Notes:</strong> ${cart.notes}</div>` : '';
+      
+      const orderIds = cart.orders.map(order => order._id).join(',');
+
+      cartCard.innerHTML = `
+        <div class="cart-header">
+          <div class="cart-table">${cart.table === 'Walk-in' ? 'Walk-in' : 'Table ' + cart.table}</div>
+          <div class="cart-time">${new Date(cart.createdAt).toLocaleTimeString()}</div>
+        </div>
+        <div class="cart-items">
+          ${itemsHTML}
+        </div>
         ${notesHTML}
-        <div class="actions">
-          <button class="btn-done" data-status="completed">✅ Completed</button>
-          <button class="btn-cancel" data-status="canceled">❌ Cancel</button>
+        <div class="cart-actions">
+          <button class="btn-done cart-complete" data-status="completed" data-ids="${orderIds}">✅ Complete All</button>
+          <button class="btn-cancel cart-cancel" data-status="canceled" data-ids="${orderIds}">❌ Cancel All</button>
         </div>
       `;
-      grid.appendChild(card);
+      grid.appendChild(cartCard);
     });
   }
 
@@ -66,14 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = e.target.closest('.btn-done, .btn-cancel');
     if (!button) return;
 
-    const card = button.closest('.order-card');
+    const card = button.closest('.cart-order-card');
     if (!card) return;
     
-    const orderId = card.dataset.id;
+    const orderIds = button.dataset.ids;
     const newStatus = button.dataset.status;
     
-    if (!orderId || !newStatus) {
-      console.error('Missing order ID or status');
+    if (!orderIds || !newStatus) {
+      console.error('Missing order IDs or status');
       return;
     }
 
@@ -82,14 +112,21 @@ document.addEventListener('DOMContentLoaded', () => {
       button.disabled = true;
       button.textContent = 'Updating...';
       
-      const response = await fetch(`${API_URL}/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      // Update all orders in the cart
+      const orderIdArray = orderIds.split(',');
+      const updatePromises = orderIdArray.map(orderId => 
+        fetch(`${API_URL}/${orderId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        })
+      );
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const responses = await Promise.all(updatePromises);
+      const failedUpdates = responses.filter(response => !response.ok);
+      
+      if (failedUpdates.length > 0) {
+        throw new Error(`Failed to update ${failedUpdates.length} orders`);
       }
       
       // Success - animate card removal
@@ -97,12 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.transform = 'scale(0.95)';
       setTimeout(() => card.remove(), 300);
     } catch (error) {
-      console.error('Error updating order:', error);
-      alert('Could not update order. Please try again.');
+      console.error('Error updating orders:', error);
+      alert('Could not update orders. Please try again.');
       
       // Reset button state
       button.disabled = false;
-      button.textContent = newStatus === 'completed' ? '✅ Completed' : '❌ Cancel';
+      button.textContent = newStatus === 'completed' ? '✅ Complete All' : '❌ Cancel All';
     }
   });
 
