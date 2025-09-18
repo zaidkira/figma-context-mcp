@@ -3,34 +3,32 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 
-// This reads the secret database URL from Render's environment variables
 const mongoDBConnectionString = process.env.MONGO_URL;
 
-// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-// --- Connect to MongoDB ---
 mongoose.connect(mongoDBConnectionString)
   .then(() => console.log('✅ Successfully connected to MongoDB!'))
   .catch((error) => console.error('❌ Error connecting to MongoDB:', error));
 
-// --- Mongoose Schema & Model ---
+// UPDATED: Added 'notes' field for special requests
 const orderSchema = new mongoose.Schema({
   table: String,
   name: String,
   qty: Number,
   status: String,
+  notes: String, // For special requests
   createdAt: { type: Date, default: Date.now }
 });
+
 const Order = mongoose.model('Order', orderSchema);
 
-// --- Test Route ---
 app.get('/', (req, res) => {
   res.send('✅ Your backend server is running and connected to the database.');
 });
 
-// --- API Endpoints ---
+// GET route for pending orders (for the dashboard)
 app.get('/api/orders', async (req, res) => {
   try {
     const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -40,21 +38,36 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
+// UPDATED: POST route now accepts an entire cart
 app.post('/api/orders', async (req, res) => {
   try {
-    const newOrder = new Order({
-      table: req.body.table,
-      name: req.body.name,
-      qty: req.body.qty,
-      status: 'pending'
+    const { table, notes, items } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Order must contain at least one item.' });
+    }
+
+    // Create a separate order document for each item in the cart
+    const orderPromises = items.map(item => {
+      const newOrder = new Order({
+        table: table,
+        name: item.name,
+        qty: item.qty,
+        status: 'pending',
+        notes: notes
+      });
+      return newOrder.save();
     });
-    const savedOrder = await newOrder.save();
-    res.status(201).json(savedOrder);
+
+    await Promise.all(orderPromises);
+    res.status(201).json({ message: 'Order placed successfully!' });
+
   } catch (error) {
     res.status(400).json({ message: 'Failed to save order' });
   }
 });
 
+// PATCH route to update an order's status
 app.patch('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,7 +79,6 @@ app.patch('/api/orders/:id', async (req, res) => {
   }
 });
 
-// --- Start the Server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is live and listening on port ${PORT}`);
