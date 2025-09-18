@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Coffee</title>
+  <title>Coffee Shop - Order Online</title>
+  <meta name="description" content="Professional coffee shop ordering system">
+  <meta name="theme-color" content="#30261C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
@@ -18,14 +22,28 @@
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
     </nav>
-    <a class="nav-cta" href="dashboard.html" target="_blank">Dashboard</a>
+    <div class="nav-actions">
+      <a class="nav-cta" href="analytics.html" target="_blank">Analytics</a>
+      <a class="nav-cta" href="dashboard.html" target="_blank">Dashboard</a>
+    </div>
   </header>
 
   <section class="hero" id="home">
     <img src="assets/images/hero-bg.png" alt="">
     <div class="hero-content">
       <h1>Welcome!!</h1>
-      <p>“A little crazy, a lot of coffee.”</p>
+      <p>"A little crazy, a lot of coffee."</p>
+      <div class="table-selector">
+        <label for="table-select">Table Number:</label>
+        <select id="table-select">
+          <option value="">Walk-in</option>
+          <option value="1">Table 1</option>
+          <option value="2">Table 2</option>
+          <option value="3">Table 3</option>
+          <option value="4">Table 4</option>
+          <option value="5">Table 5</option>
+        </select>
+      </div>
       <a class="btn-primary" href="#menu">Order Now</a>
     </div>
   </section>
@@ -79,11 +97,27 @@
           <span id="order-qty">1</span>
           <button id="increase">+</button>
         </div>
+        <h2>Special Notes:</h2>
+        <textarea id="order-notes" placeholder="Any special requests? (optional)" rows="3"></textarea>
       </div>
       <button class="order-btn" id="confirm-order">Order Now</button>
     </div>
   </div>
 
   <script src="app.js"></script>
+  <script>
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('SW registered: ', registration);
+          })
+          .catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

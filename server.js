@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 
-// Your connection string
-const mongoDBConnectionString = 'mongodb+srv://zaiddendane:yhkQqdaR0CegNGr2@cluster0.wzxvdqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// This reads the secret database URL from Render's environment variables
+const mongoDBConnectionString = process.env.MONGO_URL;
 
 // --- Middleware ---
 app.use(cors());
@@ -20,21 +20,19 @@ const orderSchema = new mongoose.Schema({
   table: String,
   name: String,
   qty: Number,
-  status: String,
-  createdAt: { type: Date, default: Date.now }
+  status: { type: String, default: 'pending' },
+  createdAt: { type: Date, default: Date.now },
+  completedAt: { type: Date, default: null },
+  notes: { type: String, default: '' }
 });
 const Order = mongoose.model('Order', orderSchema);
-
 
 // --- Test Route ---
 app.get('/', (req, res) => {
   res.send('✅ Your backend server is running and connected to the database.');
 });
 
-
 // --- API Endpoints ---
-
-// GET route to fetch all pending orders
 app.get('/api/orders', async (req, res) => {
   try {
     const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -44,7 +42,6 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-// POST route to create a new order
 app.post('/api/orders', async (req, res) => {
   try {
     const newOrder = new Order({
@@ -60,21 +57,48 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// PATCH route to update an order's status
 app.patch('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const updatedOrder = await Order.findByIdAndUpdate(id, { status }, { new: true });
+    const updateData = { status };
+    
+    // Set completedAt timestamp when order is completed or canceled
+    if (status === 'completed' || status === 'canceled') {
+      updateData.completedAt = new Date();
+    }
+    
+    const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true });
     res.json(updatedOrder);
   } catch (error) {
     res.status(400).json({ message: 'Failed to update order' });
   }
 });
 
-// --- MODIFIED: Start the Server (Ready for Deployment) ---
-const PORT = process.env.PORT || 3000;
+// GET route to fetch completed and canceled orders for CSV export
+app.get('/api/orders/completed-canceled', async (req, res) => {
+  try {
+    const completedCanceledOrders = await Order.find({ 
+      status: { $in: ['completed', 'canceled'] } 
+    }).sort({ completedAt: -1 });
+    res.json(completedCanceledOrders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch completed/canceled orders' });
+  }
+});
 
+// GET route to fetch all orders for analytics
+app.get('/api/orders/all', async (req, res) => {
+  try {
+    const allOrders = await Order.find({}).sort({ createdAt: -1 });
+    res.json(allOrders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch all orders' });
+  }
+});
+
+// --- Start the Server ---
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is live and listening on port ${PORT}`);
 });
