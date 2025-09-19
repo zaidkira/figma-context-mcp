@@ -5,30 +5,37 @@ const app = express();
 
 const mongoDBConnectionString = process.env.MONGO_URL;
 
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
+// --- Connect to MongoDB ---
 mongoose.connect(mongoDBConnectionString)
   .then(() => console.log('✅ Successfully connected to MongoDB!'))
   .catch((error) => console.error('❌ Error connecting to MongoDB:', error));
 
-// UPDATED: Added 'notes' field for special requests
+// --- Database Schemas & Models ---
 const orderSchema = new mongoose.Schema({
   table: String,
   name: String,
   qty: Number,
   status: String,
-  notes: String, // For special requests
+  notes: String,
   createdAt: { type: Date, default: Date.now }
 });
-
 const Order = mongoose.model('Order', orderSchema);
 
-app.get('/', (req, res) => {
-  res.send('✅ Your backend server is running and connected to the database.');
+// NEW: Menu Item Schema & Model
+const menuItemSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    price: { type: Number, required: true },
+    description: String,
+    imageUrl: String
 });
+const MenuItem = mongoose.model('MenuItem', menuItemSchema);
 
-// GET route for pending orders (for the dashboard)
+
+// --- API Endpoints for Orders ---
 app.get('/api/orders', async (req, res) => {
   try {
     const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -38,16 +45,12 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-// UPDATED: POST route now accepts an entire cart
 app.post('/api/orders', async (req, res) => {
   try {
     const { table, notes, items } = req.body;
-
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Order must contain at least one item.' });
     }
-
-    // Create a separate order document for each item in the cart
     const orderPromises = items.map(item => {
       const newOrder = new Order({
         table: table,
@@ -58,16 +61,13 @@ app.post('/api/orders', async (req, res) => {
       });
       return newOrder.save();
     });
-
     await Promise.all(orderPromises);
     res.status(201).json({ message: 'Order placed successfully!' });
-
   } catch (error) {
     res.status(400).json({ message: 'Failed to save order' });
   }
 });
 
-// PATCH route to update an order's status
 app.patch('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -79,6 +79,49 @@ app.patch('/api/orders/:id', async (req, res) => {
   }
 });
 
+
+// --- NEW: API Endpoints for Menu Management ---
+
+// GET all menu items
+app.get('/api/menu', async (req, res) => {
+    try {
+        const menuItems = await MenuItem.find({});
+        res.json(menuItems);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch menu items' });
+    }
+});
+
+// POST a new menu item
+app.post('/api/menu', async (req, res) => {
+    try {
+        const newItem = new MenuItem({
+            name: req.body.name,
+            price: req.body.price,
+            description: req.body.description || ''
+        });
+        const savedItem = await newItem.save();
+        res.status(201).json(savedItem);
+    } catch (error) {
+        res.status(400).json({ message: 'Failed to create menu item. Does it already exist?' });
+    }
+});
+
+// DELETE a menu item
+app.delete('/api/menu/:id', async (req, res) => {
+    try {
+        const deletedItem = await MenuItem.findByIdAndDelete(req.params.id);
+        if (!deletedItem) {
+            return res.status(404).json({ message: 'Menu item not found' });
+        }
+        res.json({ message: 'Menu item deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to delete menu item' });
+    }
+});
+
+
+// --- Start the Server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is live and listening on port ${PORT}`);
