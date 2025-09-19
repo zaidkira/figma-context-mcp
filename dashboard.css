@@ -1,4 +1,46 @@
 /* Dashboard-only styles extracted */
+
+/* CSS Variables */
+:root {
+  --bg-page: #FFFFFF;
+  --card-stroke: #E0E0E0;
+  --text-primary: #30261C;
+  --accent-primary: #30261C;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dash-hero-inner {
+    padding: 0 16px;
+  }
+  
+  .dashboard-main {
+    padding: 20px 16px 40px;
+  }
+  
+  .orders-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .order-card {
+    max-width: 100%;
+  }
+  
+  .dash-title {
+    font-size: 32px;
+  }
+  
+  .orders-title {
+    font-size: 28px;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+}
 .dash-hero { 
   background: #30261C; 
   margin-top: 0; 
@@ -7,7 +49,8 @@
 }
 
 .dash-hero-inner { 
-  width: 1440px; 
+  max-width: 1440px; 
+  width: 100%;
   height: 300px; 
   margin: 0 auto; 
   position: relative; 
@@ -15,6 +58,7 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  padding: 0 20px;
 }
 .dash-title { 
   margin: 0 0 8px 0; 
@@ -26,10 +70,11 @@
   color: #B4AFAF; 
 }
 .dashboard-main { 
-  width: 1440px; 
+  max-width: 1440px; 
+  width: 100%;
   margin: 0 auto; 
   position: relative; 
-  padding: 28px 0 64px; 
+  padding: 28px 20px 64px; 
 }
 .orders-title { 
   margin: 12px 0 24px; 
@@ -56,19 +101,23 @@
 #menu-list .cart-time { font-weight: 600; color: #30261C; }
 .orders-grid { 
   display: grid; 
-  grid-template-columns: repeat(3, 325px); 
-  gap: 0 80px; 
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+  gap: 20px; 
   justify-content: center; 
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .order-card { 
-  width: 325px; 
-  height: 433px; 
+  width: 100%; 
+  max-width: 325px;
+  min-height: 200px; 
   background: #F1F0EE; 
   border: 1.5px solid #948E86; 
   border-radius: 18px; 
   position: relative; 
   box-shadow: 0 1px 0 rgba(0,0,0,0.04);
   transition: all 0.3s ease;
+  margin: 0 auto;
 }
 .order-card .table { 
   position: absolute; 
@@ -177,6 +226,36 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Tab buttons */
+.btn-chip {
+  padding: 10px 20px;
+  border: 2px solid var(--card-stroke);
+  border-radius: 8px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-chip:hover {
+  border-color: var(--accent-primary);
+  background: rgba(48, 38, 28, 0.05);
+}
+
+.btn-chip.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
 }
 
 /* Enhanced button styles */

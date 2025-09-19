@@ -3,16 +3,23 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 
-const mongoDBConnectionString = process.env.MONGO_URL;
+const mongoDBConnectionString = process.env.MONGO_URL || 'mongodb://localhost:27017/coffee-shop';
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
 // --- Connect to MongoDB ---
-mongoose.connect(mongoDBConnectionString)
-  .then(() => console.log('✅ Successfully connected to MongoDB!'))
-  .catch((error) => console.error('❌ Error connecting to MongoDB:', error));
+if (mongoDBConnectionString) {
+  mongoose.connect(mongoDBConnectionString)
+    .then(() => console.log('✅ Successfully connected to MongoDB!'))
+    .catch((error) => {
+      console.error('❌ Error connecting to MongoDB:', error);
+      console.log('⚠️  Running in offline mode - some features may not work');
+    });
+} else {
+  console.log('⚠️  No MongoDB connection string provided - running in offline mode');
+}
 
 // --- Database Schemas & Models ---
 const orderSchema = new mongoose.Schema({
@@ -21,7 +28,8 @@ const orderSchema = new mongoose.Schema({
   qty: Number,
   status: String,
   notes: String,
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
 
@@ -34,16 +42,45 @@ const menuItemSchema = new mongoose.Schema({
 });
 const MenuItem = mongoose.model('MenuItem', menuItemSchema);
 
+// --- In-Memory Storage for Offline Mode ---
+let inMemoryOrders = [];
+let inMemoryMenuItems = [
+  { _id: 'mem1', name: 'Espresso', price: 150, description: 'Rich and bold coffee' },
+  { _id: 'mem2', name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk' },
+  { _id: 'mem3', name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam' },
+  { _id: 'mem4', name: 'Americano', price: 120, description: 'Espresso with hot water' },
+  { _id: 'mem5', name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk' },
+  { _id: 'mem6', name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice' }
+];
+
+// Helper function to check if MongoDB is connected
+function isMongoConnected() {
+  return mongoose.connection.readyState === 1;
+}
+
 
 // --- API Endpoints for Orders ---
+
+// GET pending orders
 app.get('/api/orders', async (req, res) => {
   try {
-    const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: -1 });
+    const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: 1 }); // Sort oldest first
     res.json(pendingOrders);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch orders' });
   }
 });
+
+// GET completed and canceled orders for export
+app.get('/api/orders/completed-canceled', async (req, res) => {
+  try {
+    const finishedOrders = await Order.find({ status: { $in: ['completed', 'canceled'] } }).sort({ updatedAt: -1 });
+    res.json(finishedOrders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch orders for export' });
+  }
+});
+
 
 app.post('/api/orders', async (req, res) => {
   try {
@@ -51,19 +88,27 @@ app.post('/api/orders', async (req, res) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Order must contain at least one item.' });
     }
+    
+    // Group all items under a single creation timestamp
+    const creationTime = new Date();
+    
     const orderPromises = items.map(item => {
       const newOrder = new Order({
         table: table,
         name: item.name,
         qty: item.qty,
         status: 'pending',
-        notes: notes
+        notes: notes,
+        createdAt: creationTime,
+        updatedAt: creationTime
       });
       return newOrder.save();
     });
+
     await Promise.all(orderPromises);
     res.status(201).json({ message: 'Order placed successfully!' });
   } catch (error) {
+    console.error(error);
     res.status(400).json({ message: 'Failed to save order' });
   }
 });
@@ -72,7 +117,7 @@ app.patch('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const updatedOrder = await Order.findByIdAndUpdate(id, { status }, { new: true });
+    const updatedOrder = await Order.findByIdAndUpdate(id, { status, updatedAt: new Date() }, { new: true });
     res.json(updatedOrder);
   } catch (error) {
     res.status(400).json({ message: 'Failed to update order' });
@@ -85,24 +130,53 @@ app.patch('/api/orders/:id', async (req, res) => {
 // GET all menu items
 app.get('/api/menu', async (req, res) => {
     try {
-        const menuItems = await MenuItem.find({});
-        res.json(menuItems);
+        if (isMongoConnected()) {
+            const menuItems = await MenuItem.find({});
+            res.json(menuItems);
+        } else {
+            // Use in-memory storage when MongoDB is not available
+            res.json(inMemoryMenuItems);
+        }
     } catch (error) {
-        res.status(500).json({ message: 'Failed to fetch menu items' });
+        console.error('Error fetching menu items:', error);
+        // Fallback to in-memory storage on error
+        res.json(inMemoryMenuItems);
     }
 });
 
 // POST a new menu item
 app.post('/api/menu', async (req, res) => {
     try {
-        const newItem = new MenuItem({
-            name: req.body.name,
-            price: req.body.price,
-            description: req.body.description || ''
-        });
-        const savedItem = await newItem.save();
-        res.status(201).json(savedItem);
+        if (isMongoConnected()) {
+            const newItem = new MenuItem({
+                name: req.body.name,
+                price: req.body.price,
+                description: req.body.description || '',
+                imageUrl: req.body.imageUrl || ''
+            });
+            const savedItem = await newItem.save();
+            res.status(201).json(savedItem);
+        } else {
+            // Use in-memory storage when MongoDB is not available
+            const newItem = {
+                _id: 'mem' + Date.now(),
+                name: req.body.name,
+                price: req.body.price,
+                description: req.body.description || '',
+                imageUrl: req.body.imageUrl || ''
+            };
+            
+            // Check if item already exists
+            const existingItem = inMemoryMenuItems.find(item => item.name === newItem.name);
+            if (existingItem) {
+                return res.status(400).json({ message: 'Menu item already exists' });
+            }
+            
+            inMemoryMenuItems.push(newItem);
+            res.status(201).json(newItem);
+        }
     } catch (error) {
+        console.error('Error creating menu item:', error);
         res.status(400).json({ message: 'Failed to create menu item. Does it already exist?' });
     }
 });
@@ -110,12 +184,24 @@ app.post('/api/menu', async (req, res) => {
 // DELETE a menu item
 app.delete('/api/menu/:id', async (req, res) => {
     try {
-        const deletedItem = await MenuItem.findByIdAndDelete(req.params.id);
-        if (!deletedItem) {
-            return res.status(404).json({ message: 'Menu item not found' });
+        if (isMongoConnected()) {
+            const deletedItem = await MenuItem.findByIdAndDelete(req.params.id);
+            if (!deletedItem) {
+                return res.status(404).json({ message: 'Menu item not found' });
+            }
+            res.json({ message: 'Menu item deleted successfully' });
+        } else {
+            // Use in-memory storage when MongoDB is not available
+            const itemIndex = inMemoryMenuItems.findIndex(item => item._id === req.params.id);
+            if (itemIndex === -1) {
+                return res.status(404).json({ message: 'Menu item not found' });
+            }
+            
+            inMemoryMenuItems.splice(itemIndex, 1);
+            res.json({ message: 'Menu item deleted successfully' });
         }
-        res.json({ message: 'Menu item deleted successfully' });
     } catch (error) {
+        console.error('Error deleting menu item:', error);
         res.status(500).json({ message: 'Failed to delete menu item' });
     }
 });

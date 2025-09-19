@@ -1,46 +1,60 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Check authentication
+  // Check if user is logged in
   if (localStorage.getItem('dashboard_logged_in') !== 'true') {
     window.location.href = 'login.html';
     return;
   }
 
-  // Update welcome message
-  const user = localStorage.getItem('dashboard_user') || 'Admin';
-  const welcomeUser = document.getElementById('welcome-user');
-  if (welcomeUser) {
-    welcomeUser.textContent = `Welcome, ${user}`;
-  }
-
-  // Logout functionality
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('dashboard_logged_in');
-      localStorage.removeItem('dashboard_user');
-      window.location.href = 'login.html';
-    });
-  }
-
+  // --- Element Selectors ---
   const grid = document.getElementById('orders-grid');
-  // Tabs setup
+  const menuForm = document.getElementById('menu-form');
+  const menuList = document.getElementById('menu-list');
+  const menuNameInput = document.getElementById('menu-name');
+  const menuPriceInput = document.getElementById('menu-price');
+  const logoutBtn = document.getElementById('logout-btn');
+  const welcomeUser = document.getElementById('welcome-user');
+
+  if (!grid) return;
+
+  // --- API URLs ---
+  const API_URL = 'http://localhost:3000/api/orders';
+  const EXPORT_API_URL = 'http://localhost:3000/api/orders/completed-canceled';
+  const MENU_API_URL = 'http://localhost:3000/api/menu';
+
+  // --- Tab Management ---
   const tabButtons = document.querySelectorAll('[data-tab]');
   const sections = {
     orders: document.getElementById('tab-orders'),
     menu: document.getElementById('tab-menu')
   };
-  tabButtons.forEach(btn => btn.addEventListener('click', () => {
-    const tab = btn.getAttribute('data-tab');
-    Object.entries(sections).forEach(([key, el]) => {
-      if (!el) return;
-      el.style.display = key === tab ? 'block' : 'none';
+  
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      
+      // Remove active class from all buttons
+      tabButtons.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
+      
+      // Show/hide sections
+      Object.values(sections).forEach(section => {
+        if (section) section.style.display = 'none';
+      });
+      if (sections[tab]) {
+        sections[tab].style.display = 'block';
+      }
+      // Load content for the selected tab
+      if (tab === 'menu') {
+        fetchMenuItems();
+      }
     });
-  }));
+  });
 
-  const API_URL = 'https://coffee-shop-backend-00m8.onrender.com/api/orders';
-  const EXPORT_API_URL = 'https://coffee-shop-backend-00m8.onrender.com/api/orders/completed-canceled';
-  // Local storage keys for simple CRUD (can be swapped to real API later)
-  const MENU_KEY = 'dashboard_menu_items';
+  // Set first tab as active
+  if (tabButtons.length > 0) {
+    tabButtons[0].classList.add('active');
+  }
 
   let isLoading = false;
 
@@ -80,7 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Group orders by table and creation time (cart orders)
     const cartGroups = {};
     orders.forEach(order => {
-      const cartKey = `${order.table || 'Walk-in'}_${new Date(order.createdAt).toISOString().split('T')[0]}_${Math.floor(new Date(order.createdAt).getTime() / (5 * 60 * 1000))}`; // Group by 5-minute windows
+      // Group orders placed at the exact same millisecond
+      const cartKey = `${order.table || 'Walk-in'}_${order.createdAt}`; 
       if (!cartGroups[cartKey]) {
         cartGroups[cartKey] = {
           table: order.table || 'Walk-in',
@@ -96,9 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.values(cartGroups).forEach(cart => {
       const cartCard = document.createElement('div');
       cartCard.className = 'cart-order-card';
-      
-      // Sort orders by creation time
-      cart.orders.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       
       const itemsHTML = cart.orders.map(order => `
         <div class="cart-item">
@@ -128,71 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
       grid.appendChild(cartCard);
     });
   }
-  // Menu management (localStorage-backed)
-  const menuForm = document.getElementById('menu-form');
-  const menuList = document.getElementById('menu-list');
-  function loadMenu() {
-    try { return JSON.parse(localStorage.getItem(MENU_KEY)) || []; } catch { return []; }
-  }
-  function saveMenu(items) {
-    localStorage.setItem(MENU_KEY, JSON.stringify(items));
-  }
-  function renderMenu() {
-    if (!menuList) return;
-    const items = loadMenu();
-    menuList.innerHTML = '';
-    if (items.length === 0) {
-      menuList.innerHTML = '<p style="text-align:center;width:100%;">No menu items yet.</p>';
-      return;
-    }
-    items.forEach((it, idx) => {
-      const card = document.createElement('div');
-      card.className = 'cart-order-card';
-      card.innerHTML = `
-        <div class="cart-header">
-          <div class="cart-table">${it.name}</div>
-          <div class="cart-time">${Number(it.price)} DA</div>
-        </div>
-        <div class="cart-actions">
-          <button class="btn-done" data-action="edit" data-index="${idx}">Edit</button>
-          <button class="btn-cancel" data-action="delete" data-index="${idx}">Delete</button>
-        </div>
-      `;
-      menuList.appendChild(card);
-    });
-  }
-  if (menuForm) {
-    menuForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('menu-name').value.trim();
-      const price = parseFloat(document.getElementById('menu-price').value);
-      if (!name || isNaN(price)) return;
-      const items = loadMenu();
-      const existingIdx = items.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
-      if (existingIdx >= 0) items[existingIdx] = { name, price };
-      else items.push({ name, price });
-      saveMenu(items);
-      renderMenu();
-      menuForm.reset();
-    });
-    if (menuList) menuList.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-action]');
-      if (!btn) return;
-      const idx = parseInt(btn.dataset.index, 10);
-      const items = loadMenu();
-      if (btn.dataset.action === 'delete') {
-        items.splice(idx, 1);
-        saveMenu(items);
-        renderMenu();
-      } else if (btn.dataset.action === 'edit') {
-        const item = items[idx];
-        document.getElementById('menu-name').value = item.name;
-        document.getElementById('menu-price').value = item.price;
-      }
-    });
-  }
-
-  // Removed inventory management per request
 
   grid.addEventListener('click', async (e) => {
     const button = e.target.closest('.btn-done, .btn-cancel');
@@ -210,11 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      // Disable button during update
       button.disabled = true;
       button.textContent = 'Updating...';
       
-      // Update all orders in the cart
       const orderIdArray = orderIds.split(',');
       const updatePromises = orderIdArray.map(orderId => 
         fetch(`${API_URL}/${orderId}`, {
@@ -231,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(`Failed to update ${failedUpdates.length} orders`);
       }
       
-      // Success - animate card removal
       card.style.opacity = '0';
       card.style.transform = 'scale(0.95)';
       setTimeout(() => card.remove(), 300);
@@ -239,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error updating orders:', error);
       alert('Could not update orders. Please try again.');
       
-      // Reset button state
       button.disabled = false;
       button.textContent = newStatus === 'completed' ? '✅ Complete All' : '❌ Cancel All';
     }
@@ -298,6 +241,235 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // --- Menu Management ---
+  async function fetchMenuItems() {
+    if (!menuList) return;
+    
+    // Show loading state
+    menuList.innerHTML = '<div class="loading-spinner">Loading menu items...</div>';
+    
+    try {
+      console.log('Fetching menu from:', MENU_API_URL);
+      const response = await fetch(MENU_API_URL);
+      console.log('Menu API response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const items = await response.json();
+      console.log('Menu items received:', items);
+      renderMenu(items);
+    } catch (error) {
+      console.error('Error fetching menu:', error);
+      if (menuList) {
+        // Check if it's a JSON parsing error (HTML response)
+        if (error.message.includes('Unexpected token') || error.message.includes('<!DOCTYPE')) {
+          console.log('Server returned HTML instead of JSON - using fallback menu items');
+        } else {
+          console.log('Network or server error - using fallback menu items');
+        }
+        
+        // Show fallback menu items when server is down
+        renderMenu(fallbackMenuItems);
+        
+        // Add a notice about using fallback data
+        const notice = document.createElement('div');
+        notice.style.cssText = 'text-align: center; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; margin-bottom: 10px; color: #856404;';
+        notice.innerHTML = `
+          <strong>⚠️ Offline Mode:</strong> Showing sample menu items. Server may be down or not responding properly.
+          <button onclick="fetchMenuItems()" class="btn-chip" style="margin-left: 10px; font-size: 12px;">Retry Connection</button>
+        `;
+        menuList.insertBefore(notice, menuList.firstChild);
+      }
+    }
+  }
+
+  async function addMenuItem(name, price) {
+    try {
+      console.log('Adding menu item:', { name, price });
+      console.log('POST URL:', MENU_API_URL);
+      
+      const response = await fetch(MENU_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, price }),
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        // Check if response is HTML (error page) instead of JSON
+        const contentType = response.headers.get('content-type');
+        console.log('Content-Type:', contentType);
+        
+        if (contentType && contentType.includes('text/html')) {
+          const htmlContent = await response.text();
+          console.log('HTML response:', htmlContent.substring(0, 200));
+          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. Server may be down or endpoint not found.`);
+        }
+        
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        } catch (jsonError) {
+          throw new Error(`HTTP error! status: ${response.status}. Response is not valid JSON.`);
+        }
+      }
+      
+      const result = await response.json();
+      console.log('Successfully added item:', result);
+      
+      fetchMenuItems(); // Refresh the list
+      if (menuForm) menuForm.reset();
+    } catch (error) {
+      console.error('Error adding menu item:', error);
+      alert(`Failed to add item: ${error.message}`);
+    }
+  }
+
+  async function deleteMenuItem(id) {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    try {
+      const response = await fetch(`${MENU_API_URL}/${id}`, { method: 'DELETE' });
+      
+      if (!response.ok) {
+        // Check if response is HTML (error page) instead of JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. Server may be down or endpoint not found.`);
+        }
+        
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        } catch (jsonError) {
+          throw new Error(`HTTP error! status: ${response.status}. Response is not valid JSON.`);
+        }
+      }
+      
+      fetchMenuItems(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      alert(`Failed to delete item: ${error.message}`);
+    }
+  }
+
+  function renderMenu(items) {
+    if (!menuList) return;
+    menuList.innerHTML = '';
+    if (items.length === 0) {
+      menuList.innerHTML = '<p style="text-align:center;">No menu items yet. Add one above.</p>';
+      return;
+    }
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'cart-order-card';
+      
+      // Check if this is a fallback item (read-only)
+      const isFallback = item._id && item._id.startsWith('fallback');
+      
+      card.innerHTML = `
+        <div class="cart-header">
+          <div class="cart-table">${item.name}</div>
+          <div class="cart-time">${item.price} DA</div>
+        </div>
+        ${item.description ? `<div style="padding: 8px 0; color: #666; font-size: 14px;">${item.description}</div>` : ''}
+        <div class="cart-actions">
+          ${isFallback ? 
+            '<button class="btn-cancel" disabled style="opacity: 0.5;">Sample Item</button>' : 
+            `<button class="btn-cancel" data-id="${item._id}">Delete</button>`
+          }
+        </div>
+      `;
+      menuList.appendChild(card);
+    });
+  }
+
+  // Menu form submission
+  if (menuForm) {
+    menuForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = menuNameInput ? menuNameInput.value.trim() : '';
+      const price = menuPriceInput ? parseFloat(menuPriceInput.value) : 0;
+      if (name && !isNaN(price)) {
+        addMenuItem(name, price);
+      }
+    });
+  }
+
+  // Menu list click handler
+  if (menuList) {
+    menuList.addEventListener('click', (e) => {
+      const deleteButton = e.target.closest('button[data-id]');
+      if (deleteButton) {
+        deleteMenuItem(deleteButton.dataset.id);
+      }
+    });
+  }
+
+  // --- Logout Functionality ---
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('dashboard_logged_in');
+      localStorage.removeItem('dashboard_user');
+      window.location.href = 'login.html';
+    });
+  }
+
+  // Set welcome user
+  if (welcomeUser) {
+    const user = localStorage.getItem('dashboard_user') || 'Admin';
+    welcomeUser.textContent = `Welcome, ${user}`;
+  }
+
+  // --- Fallback menu items for when server is down ---
+  const fallbackMenuItems = [
+    { _id: 'fallback1', name: 'Espresso', price: 150, description: 'Rich and bold coffee' },
+    { _id: 'fallback2', name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk' },
+    { _id: 'fallback3', name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam' },
+    { _id: 'fallback4', name: 'Americano', price: 120, description: 'Espresso with hot water' },
+    { _id: 'fallback5', name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk' },
+    { _id: 'fallback6', name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice' }
+  ];
+
+  // --- Initialize with sample menu items if empty ---
+  async function initializeMenu() {
+    try {
+      const response = await fetch(MENU_API_URL);
+      if (response.ok) {
+        const items = await response.json();
+        if (items.length === 0) {
+          // Add some sample menu items
+          const sampleItems = [
+            { name: 'Espresso', price: 150, description: 'Rich and bold coffee' },
+            { name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk' },
+            { name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam' },
+            { name: 'Americano', price: 120, description: 'Espresso with hot water' },
+            { name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk' },
+            { name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice' }
+          ];
+          
+          for (const item of sampleItems) {
+            await fetch(MENU_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(item),
+            });
+          }
+          console.log('Sample menu items added successfully');
+        }
+      }
+    } catch (error) {
+      console.log('Could not initialize menu items:', error);
+    }
+  }
+
+  // Initialize menu on page load
+  initializeMenu();
 
   fetchAndRenderOrders();
   setInterval(fetchAndRenderOrders, 5000); // Check for new orders every 5 seconds
