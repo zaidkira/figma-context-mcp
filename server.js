@@ -64,20 +64,44 @@ function isMongoConnected() {
 // GET pending orders
 app.get('/api/orders', async (req, res) => {
   try {
-    const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: 1 }); // Sort oldest first
-    res.json(pendingOrders);
+    if (isMongoConnected()) {
+      const pendingOrders = await Order.find({ status: 'pending' }).sort({ createdAt: 1 }); // Sort oldest first
+      res.json(pendingOrders);
+    } else {
+      // Use in-memory storage when MongoDB is not available
+      const pendingOrders = inMemoryOrders.filter(order => order.status === 'pending')
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      res.json(pendingOrders);
+    }
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders' });
+    console.error('Error fetching orders:', error);
+    // Fallback to in-memory storage on error
+    const pendingOrders = inMemoryOrders.filter(order => order.status === 'pending')
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    res.json(pendingOrders);
   }
 });
 
 // GET completed and canceled orders for export
 app.get('/api/orders/completed-canceled', async (req, res) => {
   try {
-    const finishedOrders = await Order.find({ status: { $in: ['completed', 'canceled'] } }).sort({ updatedAt: -1 });
-    res.json(finishedOrders);
+    if (isMongoConnected()) {
+      const finishedOrders = await Order.find({ status: { $in: ['completed', 'canceled'] } }).sort({ updatedAt: -1 });
+      res.json(finishedOrders);
+    } else {
+      // Use in-memory storage when MongoDB is not available
+      const finishedOrders = inMemoryOrders.filter(order => 
+        order.status === 'completed' || order.status === 'canceled'
+      ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      res.json(finishedOrders);
+    }
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders for export' });
+    console.error('Error fetching orders for export:', error);
+    // Fallback to in-memory storage on error
+    const finishedOrders = inMemoryOrders.filter(order => 
+      order.status === 'completed' || order.status === 'canceled'
+    ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    res.json(finishedOrders);
   }
 });
 
@@ -85,6 +109,8 @@ app.get('/api/orders/completed-canceled', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
   try {
     const { table, notes, items } = req.body;
+    console.log('Received order:', { table, notes, items });
+    
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Order must contain at least one item.' });
     }
@@ -92,23 +118,41 @@ app.post('/api/orders', async (req, res) => {
     // Group all items under a single creation timestamp
     const creationTime = new Date();
     
-    const orderPromises = items.map(item => {
-      const newOrder = new Order({
-        table: table,
-        name: item.name,
-        qty: item.qty,
-        status: 'pending',
-        notes: notes,
-        createdAt: creationTime,
-        updatedAt: creationTime
+    if (isMongoConnected()) {
+      const orderPromises = items.map(item => {
+        const newOrder = new Order({
+          table: table,
+          name: item.name,
+          qty: item.qty,
+          status: 'pending',
+          notes: notes,
+          createdAt: creationTime,
+          updatedAt: creationTime
+        });
+        return newOrder.save();
       });
-      return newOrder.save();
-    });
 
-    await Promise.all(orderPromises);
+      await Promise.all(orderPromises);
+    } else {
+      // Use in-memory storage when MongoDB is not available
+      items.forEach(item => {
+        const newOrder = {
+          _id: 'order_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          table: table,
+          name: item.name,
+          qty: item.qty,
+          status: 'pending',
+          notes: notes,
+          createdAt: creationTime,
+          updatedAt: creationTime
+        };
+        inMemoryOrders.push(newOrder);
+      });
+    }
+    
     res.status(201).json({ message: 'Order placed successfully!' });
   } catch (error) {
-    console.error(error);
+    console.error('Error saving order:', error);
     res.status(400).json({ message: 'Failed to save order' });
   }
 });
@@ -117,9 +161,24 @@ app.patch('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const updatedOrder = await Order.findByIdAndUpdate(id, { status, updatedAt: new Date() }, { new: true });
-    res.json(updatedOrder);
+    console.log('Updating order:', { id, status });
+    
+    if (isMongoConnected()) {
+      const updatedOrder = await Order.findByIdAndUpdate(id, { status, updatedAt: new Date() }, { new: true });
+      res.json(updatedOrder);
+    } else {
+      // Use in-memory storage when MongoDB is not available
+      const orderIndex = inMemoryOrders.findIndex(order => order._id === id);
+      if (orderIndex === -1) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      
+      inMemoryOrders[orderIndex].status = status;
+      inMemoryOrders[orderIndex].updatedAt = new Date();
+      res.json(inMemoryOrders[orderIndex]);
+    }
   } catch (error) {
+    console.error('Error updating order:', error);
     res.status(400).json({ message: 'Failed to update order' });
   }
 });
