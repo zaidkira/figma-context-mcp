@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Element Selectors ---
   const cartBtn = document.getElementById('cart-btn');
+  const cartFab = document.getElementById('cart-fab');
+  const cartFabCount = document.getElementById('cart-fab-count');
   const cartCountSpan = document.getElementById('cart-count');
   const cartModal = document.getElementById('cart-modal');
   const cartOverlay = document.getElementById('cart-overlay');
@@ -10,6 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const cartItemsList = document.getElementById('cart-items');
   const cartTotalPriceSpan = document.getElementById('cart-total-price');
   const placeOrderBtn = document.getElementById('place-order-btn');
+  // Mobile nav
+  const navToggle = document.getElementById('nav-toggle');
+  const siteMenu = document.getElementById('site-menu');
+  const headerActions = document.getElementById('header-actions');
+  const navOverlay = document.getElementById('nav-overlay');
   // Get table number from URL parameter or default to 'Walk-in'
   const urlParams = new URLSearchParams(window.location.search);
   const tableNumber = urlParams.get('table') || 'Walk-in';
@@ -82,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateCartCount = () => {
       const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
       cartCountSpan.textContent = totalItems;
+      if (cartFabCount) cartFabCount.textContent = totalItems;
   };
   
   const showToast = (msg, isError = false) => {
@@ -98,6 +106,51 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // --- Event Listeners ---
+  // Mobile nav toggle
+  if (navToggle && siteMenu && headerActions) {
+      navToggle.addEventListener('click', () => {
+          const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+          navToggle.setAttribute('aria-expanded', String(!expanded));
+          siteMenu.classList.toggle('active');
+          headerActions.classList.toggle('active');
+          // overlay no longer used
+      });
+
+      // Close menu after clicking a menu link and scroll
+      siteMenu.addEventListener('click', (e) => {
+          const link = e.target.closest('a[href^="#"]');
+          if (!link) return;
+          const targetId = link.getAttribute('href');
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          navToggle.setAttribute('aria-expanded', 'false');
+          siteMenu.classList.remove('active');
+          headerActions.classList.remove('active');
+          // overlay no longer used
+      });
+  }
+
+  // Close menu when overlay clicked or link tapped
+  if (navOverlay) {
+      navOverlay.addEventListener('click', () => {
+          navToggle.setAttribute('aria-expanded', 'false');
+          siteMenu.classList.remove('active');
+          headerActions.classList.remove('active');
+          navOverlay.classList.remove('active');
+      });
+  }
+  document.querySelectorAll('#site-menu a').forEach(a => {
+      a.addEventListener('click', () => {
+          if (!navToggle) return;
+          navToggle.setAttribute('aria-expanded', 'false');
+          siteMenu.classList.remove('active');
+          headerActions.classList.remove('active');
+          if (navOverlay) navOverlay.classList.remove('active');
+      });
+  });
+
   document.querySelectorAll('.btn-add-to-cart').forEach(button => {
       button.addEventListener('click', (e) => {
           const card = e.target.closest('.card');
@@ -111,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   cartBtn.addEventListener('click', openCart);
+  if (cartFab) cartFab.addEventListener('click', openCart);
   cartCloseBtn.addEventListener('click', closeCart);
   cartOverlay.addEventListener('click', closeCart);
 

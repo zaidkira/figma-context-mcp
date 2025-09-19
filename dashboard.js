@@ -23,10 +23,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const grid = document.getElementById('orders-grid');
-  if (!grid) return;
+  // Tabs setup
+  const tabButtons = document.querySelectorAll('[data-tab]');
+  const sections = {
+    orders: document.getElementById('tab-orders'),
+    menu: document.getElementById('tab-menu')
+  };
+  tabButtons.forEach(btn => btn.addEventListener('click', () => {
+    const tab = btn.getAttribute('data-tab');
+    Object.entries(sections).forEach(([key, el]) => {
+      if (!el) return;
+      el.style.display = key === tab ? 'block' : 'none';
+    });
+  }));
 
   const API_URL = 'https://coffee-shop-backend-00m8.onrender.com/api/orders';
   const EXPORT_API_URL = 'https://coffee-shop-backend-00m8.onrender.com/api/orders/completed-canceled';
+  // Local storage keys for simple CRUD (can be swapped to real API later)
+  const MENU_KEY = 'dashboard_menu_items';
 
   let isLoading = false;
 
@@ -114,6 +128,71 @@ document.addEventListener('DOMContentLoaded', () => {
       grid.appendChild(cartCard);
     });
   }
+  // Menu management (localStorage-backed)
+  const menuForm = document.getElementById('menu-form');
+  const menuList = document.getElementById('menu-list');
+  function loadMenu() {
+    try { return JSON.parse(localStorage.getItem(MENU_KEY)) || []; } catch { return []; }
+  }
+  function saveMenu(items) {
+    localStorage.setItem(MENU_KEY, JSON.stringify(items));
+  }
+  function renderMenu() {
+    if (!menuList) return;
+    const items = loadMenu();
+    menuList.innerHTML = '';
+    if (items.length === 0) {
+      menuList.innerHTML = '<p style="text-align:center;width:100%;">No menu items yet.</p>';
+      return;
+    }
+    items.forEach((it, idx) => {
+      const card = document.createElement('div');
+      card.className = 'cart-order-card';
+      card.innerHTML = `
+        <div class="cart-header">
+          <div class="cart-table">${it.name}</div>
+          <div class="cart-time">${Number(it.price)} DA</div>
+        </div>
+        <div class="cart-actions">
+          <button class="btn-done" data-action="edit" data-index="${idx}">Edit</button>
+          <button class="btn-cancel" data-action="delete" data-index="${idx}">Delete</button>
+        </div>
+      `;
+      menuList.appendChild(card);
+    });
+  }
+  if (menuForm) {
+    menuForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('menu-name').value.trim();
+      const price = parseFloat(document.getElementById('menu-price').value);
+      if (!name || isNaN(price)) return;
+      const items = loadMenu();
+      const existingIdx = items.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existingIdx >= 0) items[existingIdx] = { name, price };
+      else items.push({ name, price });
+      saveMenu(items);
+      renderMenu();
+      menuForm.reset();
+    });
+    if (menuList) menuList.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.index, 10);
+      const items = loadMenu();
+      if (btn.dataset.action === 'delete') {
+        items.splice(idx, 1);
+        saveMenu(items);
+        renderMenu();
+      } else if (btn.dataset.action === 'edit') {
+        const item = items[idx];
+        document.getElementById('menu-name').value = item.name;
+        document.getElementById('menu-price').value = item.price;
+      }
+    });
+  }
+
+  // Removed inventory management per request
 
   grid.addEventListener('click', async (e) => {
     const button = e.target.closest('.btn-done, .btn-cancel');

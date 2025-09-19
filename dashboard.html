@@ -23,11 +23,32 @@
   </section>
 
   <main class="dashboard-main">
-    <h2 class="orders-title">Orders</h2>
-    <div style="display:flex; gap:12px; justify-content:center; margin-bottom:16px;">
-      <button id="export-all" class="btn-done" type="button">Export Completed + Canceled (CSV)</button>
-    </div>
-    <div id="orders-grid" class="orders-grid" aria-live="polite"></div>
+    <nav style="display:flex; gap:12px; justify-content:center; margin: 12px 0 24px;">
+      <button class="btn-chip" data-tab="orders">Orders</button>
+      <button class="btn-chip" data-tab="menu">Menu</button>
+    </nav>
+
+    <section id="tab-orders" class="tab-section">
+      <h2 class="orders-title">Orders</h2>
+      <div style="display:flex; gap:12px; justify-content:center; margin-bottom:16px;">
+        <button id="export-all" class="btn-done" type="button">Export Completed + Canceled (CSV)</button>
+      </div>
+      <div id="orders-grid" class="orders-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="tab-menu" class="tab-section" style="display:none;">
+      <h2 class="orders-title">Menu</h2>
+      <div style="max-width:900px;margin:0 auto;display:grid;gap:12px;">
+        <form id="menu-form" style="display:grid;grid-template-columns:1fr 1fr 120px;gap:8px;align-items:center;">
+          <input id="menu-name" placeholder="Item name" required class="form-input" />
+          <input id="menu-price" type="number" placeholder="Price" required class="form-input" />
+          <button class="btn-chip" type="submit">Add / Update</button>
+        </form>
+        <div id="menu-list" class="orders-grid" style="grid-template-columns:repeat(3, 1fr);"></div>
+      </div>
+    </section>
+
+    
   </main>
 
 </body>

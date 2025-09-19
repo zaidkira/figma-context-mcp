@@ -37,6 +37,23 @@
   font: 700 34px/1.5 'Poppins', sans-serif; 
   color: #000000; 
 }
+/* Menu redesign */
+#menu-form .form-input {
+  background: var(--bg-page);
+  border: 1.5px solid var(--card-stroke);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: 500 14px 'Poppins', sans-serif;
+}
+#menu-list .cart-order-card {
+  border-radius: 12px;
+}
+#menu-list .cart-header {
+  background: rgba(48, 38, 28, 0.05);
+  border-bottom: 1px solid var(--card-stroke);
+}
+#menu-list .cart-table { font-weight: 700; }
+#menu-list .cart-time { font-weight: 600; color: #30261C; }
 .orders-grid { 
   display: grid; 
   grid-template-columns: repeat(3, 325px); 
