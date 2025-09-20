@@ -7,10 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
   
     async function fetchAndRenderMenu() {
         try {
+            console.log('Fetching menu from:', MENU_API_URL);
             cardGrid.innerHTML = '<p>Loading menu...</p>'; // Show a loading message
             const response = await fetch(MENU_API_URL);
-            if (!response.ok) throw new Error('Failed to fetch menu');
+            console.log('Menu response status:', response.status, response.statusText);
+            if (!response.ok) throw new Error(`Failed to fetch menu: ${response.status} ${response.statusText}`);
             const menuItems = await response.json();
+            console.log('Menu items received:', menuItems);
   
             cardGrid.innerHTML = ''; // Clear the loading message
             if (menuItems.length === 0) {
@@ -37,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Error fetching menu:', error);
-            cardGrid.innerHTML = '<p style="color: red;">Could not load the menu.</p>';
+            cardGrid.innerHTML = `<p style="color: red;">Could not load the menu. Error: ${error.message}</p>`;
         }
     }
   

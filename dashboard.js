@@ -316,9 +316,9 @@ document.addEventListener('DOMContentLoaded', () => {
         buttonElement.textContent = 'Exporting...';
         buttonElement.disabled = true;
       }
-      
-      const response = await fetch(EXPORT_API_URL);
-      if (!response.ok) throw new Error('Failed to fetch completed/canceled orders');
+        
+        const response = await fetch(EXPORT_API_URL);
+        if (!response.ok) throw new Error('Failed to fetch completed/canceled orders');
       let allOrders = await response.json();
       
       // Enrich orders with price information from menu
