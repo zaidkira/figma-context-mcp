@@ -341,8 +341,7 @@ html { scroll-behavior: smooth; }
     transition: opacity .2s ease;
     z-index: 101;
   }
-  /* removed: .header-actions.active { display: flex; } */
-  .header-actions .nav-cart-btn { display: none; }
+  .header-actions.active { display: flex; }
   /* Hide normal Dashboard button on mobile */
   .header-actions .nav-cta { display: none; }
 
@@ -353,36 +352,7 @@ html { scroll-behavior: smooth; }
     display: none;
     z-index: 100;
   }
-  /* removed: .nav-overlay.active */
-
-  /* Floating cart button on home */
-  .cart-fab {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    background: #fff;
-    color: var(--text-dark);
-    border: none;
-    border-radius: 100px;
-    padding: 10px 18px;
-    font-weight: 600;
-    font-size: 15px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.18);
-    z-index: 1100;
-    transition: all 0.2s ease;
-  }
-  .cart-fab:hover { background: #f0f0f0; transform: translateY(-1px); }
-  .cart-fab-count {
-    display: inline-block;
-    margin-left: 8px;
-    min-width: 20px;
-    padding: 3px 8px;
-    background: var(--bg-page);
-    color: var(--text-dark);
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 700;
-  }
+  .nav-overlay.active { display: block; }
   
   .hero-content {
     margin-left: 20px;
@@ -582,19 +552,37 @@ html { scroll-behavior: smooth; }
   padding: 40px 20px;
 }
 
-/* Cart Button in Header */
-.nav-cart-btn {
-  background: var(--accent-primary);
-  color: white;
+/* Floating cart button on home */
+.cart-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  background: #fff;
+  color: var(--text-dark);
   border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
+  border-radius: 100px;
+  padding: 16px 18px;
+  font-weight: 600;
+  font-size: 18px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+  z-index: 1100;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.nav-cart-btn:hover {
-  background: #1a1a1a;
-  transform: translateY(-1px);
+.cart-fab:hover { 
+  background: #f0f0f0; 
+  transform: translateY(-1px); 
+}
+
+.cart-fab-count {
+  display: inline-block;
+  margin-left: 8px;
+  min-width: 20px;
+  padding: 3px 8px;
+  background: var(--bg-page);
+  color: var(--text-dark);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
 }

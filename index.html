@@ -12,16 +12,19 @@
 <body>
   <header class="site-header">
     <div class="brand">Coffee</div>
-    <nav class="menu">
+    <button class="nav-toggle" id="nav-toggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <nav class="menu" id="nav-menu">
       <a href="#home">Home</a>
       <a href="#menu">Menu</a>
     </nav>
-    <div class="header-actions">
-      <button class="nav-cart-btn" id="cart-btn">
-        Cart (<span id="cart-count">0</span>)
-      </button>
+    <div class="header-actions" id="header-actions">
       <a class="nav-cta" href="dashboard.html" target="_blank">Dashboard</a>
     </div>
+    <div class="nav-overlay" id="nav-overlay"></div>
   </header>
 
   <section class="hero" id="home">
@@ -38,6 +41,11 @@
     <div class="card-grid">
       </div>
   </main>
+
+  <!-- Floating Cart Button -->
+  <button class="cart-fab" id="cart-fab-btn">
+    🛒 Cart <span class="cart-fab-count" id="cart-fab-count">0</span>
+  </button>
 
   <div class="modal-overlay" id="cart-overlay"></div>
   <div class="modal" id="cart-modal">

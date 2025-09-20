@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   
     // --- Element Selectors ---
-    const cartBtn = document.getElementById('cart-btn');
-    const cartCountSpan = document.getElementById('cart-count');
+    const cartBtn = document.getElementById('cart-fab-btn');
+    const cartCountSpan = document.getElementById('cart-fab-count');
     const cartModal = document.getElementById('cart-modal');
     const cartOverlay = document.getElementById('cart-overlay');
     const cartCloseBtn = document.getElementById('cart-close-btn');
@@ -178,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             notes: '',
             items: cart.map(item => ({
                 name: item.name,
-                qty: item.qty
+                qty: item.qty,
+                price: item.price
             }))
         };
   
@@ -212,4 +213,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   
     fetchAndRenderMenu();
+
+    // --- Mobile Navigation ---
+    const navToggle = document.getElementById('nav-toggle');
+    const navMenu = document.getElementById('nav-menu');
+    const headerActions = document.getElementById('header-actions');
+    const navOverlay = document.getElementById('nav-overlay');
+
+    if (navToggle && navMenu && headerActions && navOverlay) {
+        // Toggle mobile navigation
+        navToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            headerActions.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+
+        // Close mobile navigation when clicking overlay
+        navOverlay.addEventListener('click', () => {
+            navMenu.classList.remove('active');
+            headerActions.classList.remove('active');
+            navToggle.classList.remove('active');
+        });
+
+        // Close mobile navigation when clicking menu links
+        const menuLinks = navMenu.querySelectorAll('a');
+        menuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                headerActions.classList.remove('active');
+                navToggle.classList.remove('active');
+            });
+        });
+    }
   });

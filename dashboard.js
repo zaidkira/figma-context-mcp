@@ -11,8 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const menuList = document.getElementById('menu-list');
   const menuNameInput = document.getElementById('menu-name');
   const menuPriceInput = document.getElementById('menu-price');
+  const menuDescriptionInput = document.getElementById('menu-description');
+  const menuImageInput = document.getElementById('menu-image');
   const logoutBtn = document.getElementById('logout-btn');
   const welcomeUser = document.getElementById('welcome-user');
+
+  // Debug element selection
+  console.log('Dashboard elements found:', {
+    grid: !!grid,
+    menuForm: !!menuForm,
+    menuList: !!menuList,
+    menuNameInput: !!menuNameInput,
+    menuPriceInput: !!menuPriceInput,
+    logoutBtn: !!logoutBtn,
+    welcomeUser: !!welcomeUser
+  });
 
   if (!grid) return;
 
@@ -55,6 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tabButtons.length > 0) {
     tabButtons[0].classList.add('active');
   }
+
+  // Load initial content
+  fetchAndRenderOrders();
+  
+  // Pre-load menu items for better UX
+  fetchMenuItems();
 
   let isLoading = false;
 
@@ -209,42 +228,208 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  const btnAll = document.getElementById('export-all');
-  if (btnAll) {
-    btnAll.addEventListener('click', async function() {
-      try {
-        btnAll.textContent = 'Exporting...';
-        btnAll.disabled = true;
+  // Helper function to get date range for exports
+  function getDateRange(period) {
+    const now = new Date();
+    const start = new Date();
+    
+    switch(period) {
+      case 'daily':
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'weekly':
+        start.setDate(now.getDate() - 7);
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'monthly':
+        start.setMonth(now.getMonth() - 1);
+        start.setHours(0, 0, 0, 0);
+        break;
+      default:
+        start.setFullYear(2000); // All time
+    }
+    
+    return { start, end: now };
+  }
+
+  // Helper function to filter orders by date range
+  function filterOrdersByDate(orders, startDate, endDate) {
+    return orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      return orderDate >= startDate && orderDate <= endDate;
+    });
+  }
+
+  // Helper function to calculate total price for an order
+  function calculateOrderTotal(order) {
+    // Assuming each order has a price field, if not we'll need to get it from menu
+    return order.price ? (order.price * order.qty) : 0;
+  }
+
+  // Function to enrich orders with price information from menu
+  async function enrichOrdersWithPrices(orders) {
+    try {
+      // Fetch menu items to get prices
+      const menuResponse = await fetch(MENU_API_URL);
+      let menuItems = [];
+      
+      if (menuResponse.ok) {
+        menuItems = await menuResponse.json();
+      } else {
+        // Fallback to hardcoded menu prices if server is down
+        menuItems = [
+          { name: 'Espresso', price: 150 },
+          { name: 'Latte', price: 200 },
+          { name: 'Cappuccino', price: 180 },
+          { name: 'Americano', price: 120 },
+          { name: 'Mocha', price: 220 },
+          { name: 'Iced Coffee', price: 160 },
+          { name: 'Iced Coffe', price: 160 } // Handle typo in existing data
+        ];
+      }
+      
+      const menuMap = {};
+      menuItems.forEach(item => {
+        menuMap[item.name] = item.price;
+      });
+      
+      console.log('Menu price map:', menuMap);
+      
+      // Enrich orders with price information
+      return orders.map(order => {
+        if (!order.price || order.price === 0) {
+          order.price = menuMap[order.name] || 0;
+          console.log(`Enriched order ${order.name} with price: ${order.price}`);
+        }
+        return order;
+      });
+    } catch (error) {
+      console.error('Error enriching orders with prices:', error);
+      return orders; // Return original orders if enrichment fails
+    }
+  }
+
+  // Generic export function
+  async function exportOrders(period = 'all', buttonElement) {
+    try {
+      if (buttonElement) {
+        buttonElement.textContent = 'Exporting...';
+        buttonElement.disabled = true;
+      }
+      
+      const response = await fetch(EXPORT_API_URL);
+      if (!response.ok) throw new Error('Failed to fetch completed/canceled orders');
+      let allOrders = await response.json();
+      
+      // Enrich orders with price information from menu
+      allOrders = await enrichOrdersWithPrices(allOrders);
+      console.log('Orders after price enrichment:', allOrders);
+      
+      // Filter orders by date range if not 'all'
+      let orders = allOrders;
+      let filename = 'orders_all.csv';
+      
+      if (period !== 'all') {
+        const { start, end } = getDateRange(period);
+        orders = filterOrdersByDate(allOrders, start, end);
+        filename = `orders_${period}_${new Date().toISOString().split('T')[0]}.csv`;
+      } else {
+        filename = `orders_all_${new Date().toISOString().split('T')[0]}.csv`;
+      }
+      
+      // Filter to only include completed orders
+      const completedOrders = orders.filter(o => o.status === 'completed');
+      
+      console.log('All orders:', orders.length);
+      console.log('Completed orders:', completedOrders.length);
+      console.log('Sample completed order:', completedOrders[0]);
+      
+      if (completedOrders.length === 0) {
+        alert(`No completed orders found for ${period === 'all' ? 'all time' : period} period.`);
+        if (buttonElement) {
+          buttonElement.textContent = buttonElement.textContent.includes('All') ? 'Export All (CSV)' : `Export ${period.charAt(0).toUpperCase() + period.slice(1)}`;
+          buttonElement.disabled = false;
+        }
+        return;
+      }
+      
+      const header = ['Name', 'Qty', 'Unit Price', 'Total Price', 'Status', 'Table', 'Notes', 'Ordered At', 'Completed At'];
+      const rows = completedOrders.map(o => {
+        const unitPrice = parseFloat(o.price) || 0;
+        const quantity = parseInt(o.qty) || 1;
+        const totalPrice = unitPrice * quantity;
         
-        const response = await fetch(EXPORT_API_URL);
-        if (!response.ok) throw new Error('Failed to fetch completed/canceled orders');
-        const orders = await response.json();
+        console.log(`Order: ${o.name}, Price: ${o.price}, Qty: ${o.qty}, Unit: ${unitPrice}, Total: ${totalPrice}`);
         
-        const header = ['Name', 'Qty', 'Status', 'Table', 'Notes', 'Ordered At', 'Completed/Canceled At'];
-        const rows = orders.map(o => [
+        return [
           o.name || '', 
-          o.qty || 1, 
+          quantity, 
+          unitPrice,
+          totalPrice,
           o.status || '', 
           o.table || 'Walk-in',
           o.notes || '',
           formatTime(o.createdAt), 
           formatTime(o.updatedAt)
-        ]);
-        
-        download('orders_completed_canceled.csv', toCsv([header].concat(rows)));
+        ];
+      });
+      
+      // Add summary row
+      const totalRevenue = rows.reduce((sum, row) => sum + (parseFloat(row[3]) || 0), 0);
+      const totalItems = rows.reduce((sum, row) => sum + (parseInt(row[1]) || 0), 0);
+      rows.push(['', '', '', '', '', '', '', '', '']); // Empty row
+      rows.push(['TOTAL COMPLETED ORDERS', totalItems, '', totalRevenue.toFixed(2), '', '', '', '', '']); // Summary row
+      
+      download(filename, toCsv([header].concat(rows)));
+      
+      if (buttonElement) {
+        buttonElement.textContent = buttonElement.textContent.replace('Exporting...', 'Export Complete!');
+        setTimeout(() => {
+          buttonElement.textContent = buttonElement.textContent.replace('Export Complete!', buttonElement.textContent.includes('All') ? 'Export All (CSV)' : `Export ${period.charAt(0).toUpperCase() + period.slice(1)}`);
+          buttonElement.disabled = false;
+        }, 2000);
+      }
       } catch (error) {
         console.error('Error exporting CSV:', error);
         alert('Could not export CSV. Is the server running?');
-      } finally {
-        btnAll.textContent = 'Export Completed + Canceled (CSV)';
-        btnAll.disabled = false;
+      if (buttonElement) {
+        buttonElement.textContent = buttonElement.textContent.includes('All') ? 'Export All (CSV)' : `Export ${period.charAt(0).toUpperCase() + period.slice(1)}`;
+        buttonElement.disabled = false;
       }
-    });
+    }
+  }
+
+  // Export All button
+  const btnAll = document.getElementById('export-all');
+  if (btnAll) {
+    btnAll.addEventListener('click', () => exportOrders('all', btnAll));
+  }
+
+  // Export Daily button
+  const btnDaily = document.getElementById('export-daily');
+  if (btnDaily) {
+    btnDaily.addEventListener('click', () => exportOrders('daily', btnDaily));
+  }
+
+  // Export Weekly button
+  const btnWeekly = document.getElementById('export-weekly');
+  if (btnWeekly) {
+    btnWeekly.addEventListener('click', () => exportOrders('weekly', btnWeekly));
+  }
+
+  // Export Monthly button
+  const btnMonthly = document.getElementById('export-monthly');
+  if (btnMonthly) {
+    btnMonthly.addEventListener('click', () => exportOrders('monthly', btnMonthly));
   }
 
   // --- Menu Management ---
   async function fetchMenuItems() {
-    if (!menuList) return;
+    console.log('fetchMenuItems called, menuList:', menuList);
+    if (!menuList) {
+      console.error('menuList element not found!');
+      return;
+    }
     
     // Show loading state
     menuList.innerHTML = '<div class="loading-spinner">Loading menu items...</div>';
@@ -287,15 +472,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function addMenuItem(name, price) {
+  async function addMenuItem(name, price, description = '', imageUrl = '') {
     try {
-      console.log('Adding menu item:', { name, price });
+      console.log('Adding menu item:', { name, price, description, imageUrl });
       console.log('POST URL:', MENU_API_URL);
       
       const response = await fetch(MENU_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, price }),
+        body: JSON.stringify({ name, price, description, imageUrl }),
       });
       
       console.log('Response status:', response.status);
@@ -377,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cart-table">${item.name}</div>
           <div class="cart-time">${item.price} DA</div>
         </div>
+        ${item.imageUrl ? `<div style="margin: 8px 0;"><img src="${item.imageUrl}" alt="${item.name}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;" /></div>` : ''}
         ${item.description ? `<div style="padding: 8px 0; color: #666; font-size: 14px;">${item.description}</div>` : ''}
         <div class="cart-actions">
           ${isFallback ? 
@@ -395,8 +581,36 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const name = menuNameInput ? menuNameInput.value.trim() : '';
       const price = menuPriceInput ? parseFloat(menuPriceInput.value) : 0;
+      const description = menuDescriptionInput ? menuDescriptionInput.value.trim() : '';
+      const imageUrl = window.currentImageUrl || '';
       if (name && !isNaN(price)) {
-        addMenuItem(name, price);
+        addMenuItem(name, price, description, imageUrl);
+        // Clear the form and image
+        if (menuForm) menuForm.reset();
+        if (menuImageInput) menuImageInput.value = '';
+        window.currentImageUrl = '';
+      }
+    });
+  }
+
+  // Image upload handler
+  const uploadImageBtn = document.getElementById('upload-image');
+  if (uploadImageBtn && menuImageInput) {
+    uploadImageBtn.addEventListener('click', () => {
+      menuImageInput.click();
+    });
+
+    menuImageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // For now, we'll just show a preview. In a real app, you'd upload to a server
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          // Store the image data URL for now
+          window.currentImageUrl = e.target.result;
+          console.log('Image selected:', file.name);
+        };
+        reader.readAsDataURL(file);
       }
     });
   }
