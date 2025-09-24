@@ -6,8 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const ACTIVATION_STORAGE_KEY = 'coffee_app_activation';
     
     function checkActivation() {
+      console.log('🔍 Checking activation...');
       const activationData = localStorage.getItem(ACTIVATION_STORAGE_KEY);
+      console.log('Activation data:', activationData);
+      
       if (!activationData) {
+        console.log('❌ No activation data found, showing modal');
         showActivationModal();
         return false;
       }
@@ -18,27 +22,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const activationDate = new Date(activatedAt);
         const fiveMinutesAgo = new Date(now.getTime() - (5 * 60 * 1000)); // 5 minutes ago
         
+        console.log('Key:', key, 'Expected:', ACTIVATION_KEY);
+        console.log('Activation date:', activationDate);
+        console.log('Five minutes ago:', fiveMinutesAgo);
+        console.log('Is expired?', activationDate < fiveMinutesAgo);
+        
         if (key !== ACTIVATION_KEY || activationDate < fiveMinutesAgo) {
+          console.log('❌ Activation expired or invalid, showing modal');
           showActivationModal();
           return false;
         }
         
+        console.log('✅ Activation valid');
         return true;
       } catch (error) {
+        console.log('❌ Error parsing activation data:', error);
         showActivationModal();
         return false;
       }
     }
     
     function showActivationModal() {
+      console.log('🔑 Showing activation modal...');
       const activationModal = document.getElementById('activation-modal');
       const activationOverlay = document.getElementById('activation-overlay');
-      activationModal.classList.add('active');
-      activationOverlay.classList.add('active');
       
-      // Disable all app functionality
-      document.body.style.pointerEvents = 'none';
-      activationModal.style.pointerEvents = 'auto';
+      console.log('Modal element:', activationModal);
+      console.log('Overlay element:', activationOverlay);
+      
+      if (activationModal && activationOverlay) {
+        activationModal.classList.add('active');
+        activationOverlay.classList.add('active');
+        
+        // Disable all app functionality
+        document.body.style.pointerEvents = 'none';
+        activationModal.style.pointerEvents = 'auto';
+        console.log('✅ Modal shown successfully');
+      } else {
+        console.error('❌ Modal elements not found!');
+      }
     }
     
     function hideActivationModal() {
@@ -59,10 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         localStorage.setItem(ACTIVATION_STORAGE_KEY, JSON.stringify(activationData));
         hideActivationModal();
-        showToast('✅ App activated successfully!');
+        alert('✅ App activated successfully!');
         return true;
       } else {
-        showToast('❌ Invalid activation key', true);
+        alert('❌ Invalid activation key');
         return false;
       }
     }
@@ -422,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (key) {
           activateApp(key);
         } else {
-          showToast('❌ Please enter an activation key', true);
+          alert('❌ Please enter an activation key');
         }
       });
     }
@@ -430,14 +452,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activationCancelBtn) {
       activationCancelBtn.addEventListener('click', () => {
         hideActivationModal();
-        showToast('App requires activation to continue', true);
+        alert('App requires activation to continue');
       });
     }
     
     if (activationOverlay) {
       activationOverlay.addEventListener('click', () => {
         // Prevent closing by clicking overlay - force activation
-        showToast('Please enter activation key to continue', true);
+        alert('Please enter activation key to continue');
       });
     }
     
