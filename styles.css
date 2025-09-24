@@ -341,7 +341,7 @@ html { scroll-behavior: smooth; }
     transition: opacity .2s ease;
     z-index: 101;
   }
-  .header-actions.active { display: none; }
+  .header-actions.active { display: none !important; }
   /* Hide normal Dashboard button on mobile */
   .header-actions .nav-cta { display: none; }
 
