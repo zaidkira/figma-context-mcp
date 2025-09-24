@@ -16,9 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const { key, activatedAt } = JSON.parse(activationData);
         const now = new Date();
         const activationDate = new Date(activatedAt);
-        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        const fiveMinutesAgo = new Date(now.getTime() - (5 * 60 * 1000)); // 5 minutes ago
         
-        if (key !== ACTIVATION_KEY || activationDate < oneMonthAgo) {
+        if (key !== ACTIVATION_KEY || activationDate < fiveMinutesAgo) {
           showActivationModal();
           return false;
         }
