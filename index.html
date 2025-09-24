@@ -69,6 +69,17 @@
       </div>
   </div>
 
+  <script>
+    (function(){
+      try {
+        var base = 'https://figma-context-mcp-4sq6.onrender.com';
+        window.API_BASE = base;
+        if (window.localStorage) {
+          localStorage.setItem('api_base', base);
+        }
+      } catch(_) {}
+    })();
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
