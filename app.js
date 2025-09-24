@@ -20,14 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const { key, activatedAt } = JSON.parse(activationData);
         const now = new Date();
         const activationDate = new Date(activatedAt);
-        const fiveMinutesAgo = new Date(now.getTime() - (5 * 60 * 1000)); // 5 minutes ago
+        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
         
         console.log('Key:', key, 'Expected:', ACTIVATION_KEY);
         console.log('Activation date:', activationDate);
-        console.log('Five minutes ago:', fiveMinutesAgo);
-        console.log('Is expired?', activationDate < fiveMinutesAgo);
+        console.log('One month ago:', oneMonthAgo);
+        console.log('Is expired?', activationDate < oneMonthAgo);
         
-        if (key !== ACTIVATION_KEY || activationDate < fiveMinutesAgo) {
+        if (key !== ACTIVATION_KEY || activationDate < oneMonthAgo) {
           console.log('❌ Activation expired or invalid, showing modal');
           showActivationModal();
           return false;
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return; // Stop execution if not activated
     }
     
-    // Check activation every 10 seconds to catch expiry (for testing)
+    // Check activation every hour to catch expiry
     setInterval(() => {
       console.log('⏰ Checking activation expiry...');
       if (!checkActivation()) {
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show modal
         showActivationModal();
       }
-    }, 10000); // Check every 10 seconds for testing
+    }, 3600000); // Check every hour (3600000 ms)
     
     // Show countdown timer
     function updateCountdown() {
@@ -165,13 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const { activatedAt } = JSON.parse(activationData);
           const now = new Date();
           const activationDate = new Date(activatedAt);
-          const expiryTime = new Date(activationDate.getTime() + (5 * 60 * 1000)); // 5 minutes from activation
+          const expiryTime = new Date(activationDate.getFullYear(), activationDate.getMonth() + 1, activationDate.getDate()); // 1 month from activation
           const timeLeft = expiryTime - now;
           
           if (timeLeft > 0) {
-            const minutes = Math.floor(timeLeft / 60000);
-            const seconds = Math.floor((timeLeft % 60000) / 1000);
-            console.log(`⏱️ Activation expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`);
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            console.log(`⏱️ Activation expires in: ${days} days, ${hours} hours`);
           }
         } catch (error) {
           console.log('Error calculating countdown:', error);
