@@ -93,6 +93,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!checkActivation()) {
       return; // Stop execution if not activated
     }
+    
+    // Check activation every 10 seconds to catch expiry (for testing)
+    setInterval(() => {
+      console.log('⏰ Checking activation expiry...');
+      if (!checkActivation()) {
+        console.log('🔒 App locked due to activation expiry');
+        // Stop all app functionality
+        document.body.style.pointerEvents = 'none';
+        // Show modal
+        showActivationModal();
+      }
+    }, 10000); // Check every 10 seconds for testing
+    
+    // Show countdown timer
+    function updateCountdown() {
+      const activationData = localStorage.getItem(ACTIVATION_STORAGE_KEY);
+      if (activationData) {
+        try {
+          const { activatedAt } = JSON.parse(activationData);
+          const now = new Date();
+          const activationDate = new Date(activatedAt);
+          const expiryTime = new Date(activationDate.getTime() + (5 * 60 * 1000)); // 5 minutes from activation
+          const timeLeft = expiryTime - now;
+          
+          if (timeLeft > 0) {
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            console.log(`⏱️ Activation expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`);
+          }
+        } catch (error) {
+          console.log('Error calculating countdown:', error);
+        }
+      }
+    }
+    
+    // Update countdown every second
+    setInterval(updateCountdown, 1000);
   
     // --- API base resolution (supports Netlify static + separate backend) ---
     const urlApiBase = new URLSearchParams(location.search).get('api_base') || '';
