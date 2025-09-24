@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     let cart = [];
   
-    // --- New Menu Rendering Logic ---
-    const MENU_API_URL = '/api/menu';
+    // --- API base resolution (supports Netlify static + separate backend) ---
+    const storedBase = (typeof localStorage !== 'undefined') ? (localStorage.getItem('api_base') || '') : '';
+    const inferredLocalBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
+    const API_BASE = (window.API_BASE || storedBase || inferredLocalBase).replace(/\/$/, '');
+    const MENU_API_URL = `${API_BASE}/api/menu`;
     const cardGrid = document.querySelector('.card-grid');
   
     // Fallback menu items for offline mode
@@ -70,7 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
             renderMenu(menuItems);
         } catch (error) {
             console.error('Error fetching menu:', error);
-            cardGrid.innerHTML = `<p style="color: red;">Could not load the menu. Error: ${error.message}</p>`;
+            // If no API base configured (common on Netlify), prompt once
+            if (!API_BASE) {
+                const input = prompt('Enter backend API base URL (e.g., https://your-backend.example.com)');
+                if (input) {
+                    try {
+                        localStorage.setItem('api_base', input.replace(/\/$/, ''));
+                        location.reload();
+                        return;
+                    } catch(_) {}
+                }
+            }
+            cardGrid.innerHTML = `<p style=\"color: red;\">Could not load the menu. Error: ${error.message}.<br/>API base: ${API_BASE || '(not set)'}<br/>Set window.API_BASE or localStorage 'api_base'.</p>`;
         }
     }
   
@@ -220,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             placeOrderBtn.textContent = 'Sending...';
             placeOrderBtn.disabled = true;
   
-            const response = await fetch('/api/orders', {
+            const response = await fetch(`${API_BASE}/api/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData),

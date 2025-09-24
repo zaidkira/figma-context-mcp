@@ -30,10 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!grid) return;
 
-  // --- API URLs ---
-  const API_URL = '/api/orders';
-  const EXPORT_API_URL = '/api/orders/completed-canceled';
-  const MENU_API_URL = '/api/menu';
+  // --- API base resolution ---
+  const storedBase = (typeof localStorage !== 'undefined') ? (localStorage.getItem('api_base') || '') : '';
+  const inferredLocalBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
+  const API_BASE = (window.API_BASE || storedBase || inferredLocalBase).replace(/\/$/, '');
+  const API_URL = `${API_BASE}/api/orders`;
+  const EXPORT_API_URL = `${API_BASE}/api/orders/completed-canceled`;
+  const MENU_API_URL = `${API_BASE}/api/menu`;
 
   // --- Tab Management ---
   const tabButtons = document.querySelectorAll('[data-tab]');
