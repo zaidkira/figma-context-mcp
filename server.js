@@ -8,6 +8,8 @@ const mongoDBConnectionString = process.env.MONGO_URL || 'mongodb://localhost:27
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
+// Serve static frontend assets
+app.use(express.static(__dirname));
 
 // --- Connect to MongoDB ---
 if (mongoDBConnectionString) {

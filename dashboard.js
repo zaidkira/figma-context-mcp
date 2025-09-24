@@ -30,9 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!grid) return;
 
   // --- API URLs ---
-  const API_URL = 'http://localhost:3000/api/orders';
-  const EXPORT_API_URL = 'http://localhost:3000/api/orders/completed-canceled';
-  const MENU_API_URL = 'http://localhost:3000/api/menu';
+  const API_URL = '/api/orders';
+  const EXPORT_API_URL = '/api/orders/completed-canceled';
+  const MENU_API_URL = '/api/menu';
 
   // --- Tab Management ---
   const tabButtons = document.querySelectorAll('[data-tab]');
@@ -276,16 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (menuResponse.ok) {
         menuItems = await menuResponse.json();
       } else {
-        // Fallback to hardcoded menu prices if server is down
-        menuItems = [
-          { name: 'Espresso', price: 150 },
-          { name: 'Latte', price: 200 },
-          { name: 'Cappuccino', price: 180 },
-          { name: 'Americano', price: 120 },
-          { name: 'Mocha', price: 220 },
-          { name: 'Iced Coffee', price: 160 },
-          { name: 'Iced Coffe', price: 160 } // Handle typo in existing data
-        ];
+        // No fallback: keep fully online
+        menuItems = [];
       }
       
       const menuMap = {};
@@ -305,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } catch (error) {
       console.error('Error enriching orders with prices:', error);
-      return orders; // Return original orders if enrichment fails
+      return orders; // Keep original orders if enrichment fails
     }
   }
 
@@ -450,24 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Error fetching menu:', error);
       if (menuList) {
-        // Check if it's a JSON parsing error (HTML response)
-        if (error.message.includes('Unexpected token') || error.message.includes('<!DOCTYPE')) {
-          console.log('Server returned HTML instead of JSON - using fallback menu items');
-        } else {
-          console.log('Network or server error - using fallback menu items');
-        }
-        
-        // Show fallback menu items when server is down
-        renderMenu(fallbackMenuItems);
-        
-        // Add a notice about using fallback data
-        const notice = document.createElement('div');
-        notice.style.cssText = 'text-align: center; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; margin-bottom: 10px; color: #856404;';
-        notice.innerHTML = `
-          <strong>⚠️ Offline Mode:</strong> Showing sample menu items. Server may be down or not responding properly.
-          <button onclick="fetchMenuItems()" class="btn-chip" style="margin-left: 10px; font-size: 12px;">Retry Connection</button>
-        `;
-        menuList.insertBefore(notice, menuList.firstChild);
+        menuList.innerHTML = '<p style="color: red; text-align: center;">Could not load menu. Ensure the server is running.</p>';
       }
     }
   }
@@ -640,15 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeUser.textContent = `Welcome, ${user}`;
   }
 
-  // --- Fallback menu items for when server is down ---
-  const fallbackMenuItems = [
-    { _id: 'fallback1', name: 'Espresso', price: 150, description: 'Rich and bold coffee' },
-    { _id: 'fallback2', name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk' },
-    { _id: 'fallback3', name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam' },
-    { _id: 'fallback4', name: 'Americano', price: 120, description: 'Espresso with hot water' },
-    { _id: 'fallback5', name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk' },
-    { _id: 'fallback6', name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice' }
-  ];
+  // Offline fallbacks removed to keep app fully online
 
   // --- Initialize with sample menu items if empty ---
   async function initializeMenu() {

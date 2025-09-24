@@ -2,9 +2,43 @@ document.addEventListener('DOMContentLoaded', () => {
     let cart = [];
   
     // --- New Menu Rendering Logic ---
-    const MENU_API_URL = 'http://localhost:3000/api/menu';
+    const MENU_API_URL = '/api/menu';
     const cardGrid = document.querySelector('.card-grid');
   
+    // Fallback menu items for offline mode
+    const fallbackMenuItems = [
+        { _id: 'fallback1', name: 'Espresso', price: 150, description: 'Rich and bold coffee', imageUrl: 'assets/images/card-espresso.png' },
+        { _id: 'fallback2', name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk', imageUrl: 'assets/images/card-latte.png' },
+        { _id: 'fallback3', name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam', imageUrl: 'assets/images/card-cappuccino.png' },
+        { _id: 'fallback4', name: 'Americano', price: 120, description: 'Espresso with hot water', imageUrl: 'assets/images/card-drip-1078a0.png' },
+        { _id: 'fallback5', name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk', imageUrl: 'assets/images/card-mocha.png' },
+        { _id: 'fallback6', name: 'Iced Tea', price: 160, description: 'Refreshing iced tea', imageUrl: 'assets/images/card-iced-tea-5141e6.png' }
+    ];
+
+    function renderMenu(items) {
+        cardGrid.innerHTML = '';
+        if (!items || items.length === 0) {
+            cardGrid.innerHTML = '<p>Menu is currently unavailable.</p>';
+            return;
+        }
+        items.forEach(item => {
+            const card = document.createElement('article');
+            card.className = 'card';
+            card.dataset.id = item._id || item.id || `fallback_${item.name}`;
+            card.dataset.price = item.price;
+            card.innerHTML = `
+                <img src="${item.imageUrl || 'assets/images/card-latte.png'}" alt="${item.name}">
+                <h3 class="card-title">${item.name}</h3>
+                <p class="card-sub">${item.description || ''}</p>
+                <div class="card-cta">
+                    <span class="price">${item.price} DA</span>
+                    <button class="btn-chip btn-add-to-cart">Add to Cart</button>
+                </div>
+            `;
+            cardGrid.appendChild(card);
+        });
+    }
+
     async function fetchAndRenderMenu() {
         try {
             console.log('Fetching menu from:', MENU_API_URL);
@@ -14,30 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`Failed to fetch menu: ${response.status} ${response.statusText}`);
             const menuItems = await response.json();
             console.log('Menu items received:', menuItems);
-  
-            cardGrid.innerHTML = ''; // Clear the loading message
-            if (menuItems.length === 0) {
-                 cardGrid.innerHTML = '<p>Menu is currently unavailable.</p>';
-                 return;
-            }
-  
-            menuItems.forEach(item => {
-                const card = document.createElement('article');
-                card.className = 'card';
-                card.dataset.id = item._id; // Use the database ID
-                card.dataset.price = item.price;
-  
-                card.innerHTML = `
-                    <img src="${item.imageUrl || 'assets/images/card-latte.png'}" alt="${item.name}">
-                    <h3 class="card-title">${item.name}</h3>
-                    <p class="card-sub">${item.description}</p>
-                    <div class="card-cta">
-                        <span class="price">${item.price} DA</span>
-                        <button class="btn-chip btn-add-to-cart">Add to Cart</button>
-                    </div>
-                `;
-                cardGrid.appendChild(card);
-            });
+            renderMenu(menuItems);
         } catch (error) {
             console.error('Error fetching menu:', error);
             cardGrid.innerHTML = `<p style="color: red;">Could not load the menu. Error: ${error.message}</p>`;
@@ -190,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             placeOrderBtn.textContent = 'Sending...';
             placeOrderBtn.disabled = true;
   
-            const response = await fetch('http://localhost:3000/api/orders', {
+            const response = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData),
