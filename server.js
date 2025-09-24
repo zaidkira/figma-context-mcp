@@ -72,6 +72,17 @@ let inMemoryMenuItems = [
   { _id: 'mem6', name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice', category: 'Cold' }
 ];
 
+// Fixed allowed categories
+const ALLOWED_CATEGORIES = ['Hot coffee', 'snacks', 'cold coffee', 'dessert'];
+
+function normalizeCategory(input) {
+  if (!input || typeof input !== 'string') return ALLOWED_CATEGORIES[0];
+  // keep exact values if match ignoring case/spacing
+  const normalized = input.trim().toLowerCase();
+  const match = ALLOWED_CATEGORIES.find(c => c.toLowerCase() === normalized);
+  return match || ALLOWED_CATEGORIES[0];
+}
+
 // Helper function to check if MongoDB is connected
 function isMongoConnected() {
   return mongoose.connection.readyState === 1;
@@ -233,7 +244,7 @@ app.post('/api/menu', async (req, res) => {
                 price: req.body.price,
                 description: req.body.description || '',
                 imageUrl: req.body.imageUrl || '',
-                category: req.body.category || 'Other'
+                category: normalizeCategory(req.body.category)
             });
             const savedItem = await newItem.save();
             res.status(201).json(savedItem);
@@ -245,7 +256,7 @@ app.post('/api/menu', async (req, res) => {
                 price: req.body.price,
                 description: req.body.description || '',
                 imageUrl: req.body.imageUrl || '',
-                category: req.body.category || 'Other'
+                category: normalizeCategory(req.body.category)
             };
             
             // Check if item already exists

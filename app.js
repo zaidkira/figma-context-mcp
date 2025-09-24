@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_BASE = isHttp ? rawBase : '';
     const MENU_API_URL = API_BASE ? `${API_BASE}/api/menu` : '/api/menu';
     const cardGrid = document.querySelector('.card-grid');
+    const categoryFilters = document.getElementById('category-filters');
+    let currentCategoryFilter = 'All';
   
     // Fallback menu items for offline mode
     const fallbackMenuItems = [
@@ -40,31 +42,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const categories = Object.keys(categoryToItems).sort((a, b) => a.localeCompare(b));
 
-        categories.forEach(category => {
-            // Category heading
-            const heading = document.createElement('h3');
-            heading.textContent = category;
-            heading.style.cssText = 'grid-column: 1 / -1; margin: 8px 0 4px; color:#333; font-size:18px;';
-            cardGrid.appendChild(heading);
-
-            // Cards for this category
-            categoryToItems[category].forEach(item => {
-                const card = document.createElement('article');
-                card.className = 'card';
-                card.dataset.id = item._id || item.id || `fallback_${item.name}`;
-                card.dataset.price = item.price;
-                card.innerHTML = `
-                    <img src="${item.imageUrl || 'assets/images/card-latte.png'}" alt="${item.name}">
-                    <h3 class="card-title">${item.name}</h3>
-                    ${item.description ? `<p class=\"card-sub\">${item.description}</p>` : ''}
-                    <div class="card-cta">
-                        <span class="price">${item.price} DA</span>
-                        <button class="btn-chip btn-add-to-cart">Add to Cart</button>
-                    </div>
-                `;
-                cardGrid.appendChild(card);
+        // Render filter chips
+        if (categoryFilters) {
+            const allCategories = ['All'].concat(categories);
+            categoryFilters.innerHTML = '';
+            allCategories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-chip';
+                btn.textContent = cat;
+                if (cat === currentCategoryFilter) btn.classList.add('active');
+                btn.addEventListener('click', () => {
+                    currentCategoryFilter = cat;
+                    // Re-render menu filtered
+                    renderFiltered();
+                });
+                categoryFilters.appendChild(btn);
             });
-        });
+        }
+
+        function renderFiltered() {
+            cardGrid.innerHTML = '';
+            const visibleCategories = currentCategoryFilter === 'All' ? categories : categories.filter(c => c === currentCategoryFilter);
+            visibleCategories.forEach(category => {
+                // Category heading
+                const heading = document.createElement('h3');
+                heading.textContent = category;
+                heading.style.cssText = 'grid-column: 1 / -1; margin: 8px 0 4px; color:#333; font-size:18px;';
+                cardGrid.appendChild(heading);
+                // Cards
+                categoryToItems[category].forEach(item => {
+                    const card = document.createElement('article');
+                    card.className = 'card';
+                    card.dataset.id = item._id || item.id || `fallback_${item.name}`;
+                    card.dataset.price = item.price;
+                    card.dataset.category = (item.category && String(item.category).trim()) || 'Other';
+                    card.innerHTML = `
+                        <img src="${item.imageUrl || 'assets/images/card-latte.png'}" alt="${item.name}">
+                        <h3 class="card-title">${item.name}</h3>
+                        ${item.description ? `<p class=\"card-sub\">${item.description}</p>` : ''}
+                        <div class="card-cta">
+                            <span class="price">${item.price} DA</span>
+                            <button class="btn-chip btn-add-to-cart">Add to Cart</button>
+                        </div>
+                    `;
+                    cardGrid.appendChild(card);
+                });
+            });
+        }
+
+        // Initial render
+        renderFiltered();
     }
 
     async function fetchAndRenderMenu() {
@@ -154,22 +181,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cart.length === 0) {
             cartItemsList.innerHTML = '<p class="cart-empty-msg">Your cart is empty.</p>';
         } else {
-            cart.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'cart-item';
-                itemElement.innerHTML = `
-                    <span class="cart-item-name">${item.name}</span>
-                    <div class="cart-item-controls">
-                        <button class="qty-btn" data-id="${item.id}" data-action="decrease">-</button>
-                        <span class="cart-item-qty">${item.qty}</span>
-                        <button class="qty-btn" data-id="${item.id}" data-action="increase">+</button>
-                        <span class="cart-item-price">${item.price * item.qty} DA</span>
-                    </div>
-                `;
-                cartItemsList.appendChild(itemElement);
+            const categoryToItems = cart.reduce((acc, item) => {
+                const cat = (item.category && String(item.category).trim()) || 'Other';
+                if (!acc[cat]) acc[cat] = [];
+                acc[cat].push(item);
+                return acc;
+            }, {});
+            const categories = Object.keys(categoryToItems).sort((a, b) => a.localeCompare(b));
+            categories.forEach(category => {
+                const heading = document.createElement('div');
+                heading.textContent = category;
+                heading.style.cssText = 'font-weight:600;margin:8px 0;color:#333;';
+                cartItemsList.appendChild(heading);
+                categoryToItems[category].forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'cart-item';
+                    itemElement.innerHTML = `
+                        <span class="cart-item-name">${item.name}</span>
+                        <div class="cart-item-controls">
+                            <button class="qty-btn" data-id="${item.id}" data-action="decrease">-</button>
+                            <span class="cart-item-qty">${item.qty}</span>
+                            <button class="qty-btn" data-id="${item.id}" data-action="increase">+</button>
+                            <span class="cart-item-price">${item.price * item.qty} DA</span>
+                        </div>
+                    `;
+                    cartItemsList.appendChild(itemElement);
+                });
             });
         }
-        
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         cartTotalPriceSpan.textContent = `${total} DA`;
     };

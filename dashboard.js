@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const menuPriceInput = document.getElementById('menu-price');
   const menuDescriptionInput = document.getElementById('menu-description');
   const menuCategoryInput = document.getElementById('menu-category');
+  const FIXED_CATEGORIES = ['Hot coffee', 'snacks', 'cold coffee', 'dessert'];
   const menuImageInput = document.getElementById('menu-image');
   const logoutBtn = document.getElementById('logout-btn');
   const welcomeUser = document.getElementById('welcome-user');
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- API base resolution ---
   const storedBase = (typeof localStorage !== 'undefined') ? (localStorage.getItem('api_base') || '') : '';
-  const inferredLocalBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
+  const inferredLocalBase = '';
   const API_BASE = (window.API_BASE || storedBase || inferredLocalBase).replace(/\/$/, '');
   const API_URL = `${API_BASE}/api/orders`;
   const EXPORT_API_URL = `${API_BASE}/api/orders/completed-canceled`;
@@ -562,7 +563,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const name = menuNameInput ? menuNameInput.value.trim() : '';
       const price = menuPriceInput ? parseFloat(menuPriceInput.value) : 0;
       const description = menuDescriptionInput ? menuDescriptionInput.value.trim() : '';
-      const category = menuCategoryInput ? menuCategoryInput.value.trim() : 'Other';
+      const categoryRaw = menuCategoryInput ? menuCategoryInput.value : FIXED_CATEGORIES[0];
+      const category = FIXED_CATEGORIES.includes(categoryRaw) ? categoryRaw : FIXED_CATEGORIES[0];
       const imageUrl = window.currentImageUrl || '';
       if (name && !isNaN(price)) {
         addMenuItem(name, price, description, imageUrl, category);

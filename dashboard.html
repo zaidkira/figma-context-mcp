@@ -46,7 +46,12 @@
           <input id="menu-name" placeholder="Item name" required class="form-input" />
           <input id="menu-price" type="number" placeholder="Price" required class="form-input" />
           <input id="menu-description" placeholder="Description" class="form-input" />
-          <input id="menu-category" placeholder="Category (e.g., Coffee, Tea)" class="form-input" />
+          <select id="menu-category" class="form-input">
+            <option value="Hot coffee">Hot coffee</option>
+            <option value="snacks">snacks</option>
+            <option value="cold coffee">cold coffee</option>
+            <option value="dessert">dessert</option>
+          </select>
           <button class="btn-chip" type="submit">Add / Update</button>
         </form>
         <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;margin-top:8px;">
