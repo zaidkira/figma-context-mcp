@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 
-const mongoDBConnectionString = process.env.MONGO_URL || 'mongodb://localhost:27017/coffee-shop';
+const mongoDBConnectionString = process.env.MONGO_URL || 'mongodb+srv://zaiddendane:yhkQqdaR0CegNGr2@cluster0.wzxvdqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // --- Middleware ---
 app.use(cors());
