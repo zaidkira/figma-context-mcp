@@ -1,6 +1,77 @@
 document.addEventListener('DOMContentLoaded', () => {
     let cart = [];
   
+    // --- Activation Key System ---
+    const ACTIVATION_KEY = 'COFFEE2024'; // Change this to your desired key
+    const ACTIVATION_STORAGE_KEY = 'coffee_app_activation';
+    
+    function checkActivation() {
+      const activationData = localStorage.getItem(ACTIVATION_STORAGE_KEY);
+      if (!activationData) {
+        showActivationModal();
+        return false;
+      }
+      
+      try {
+        const { key, activatedAt } = JSON.parse(activationData);
+        const now = new Date();
+        const activationDate = new Date(activatedAt);
+        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        
+        if (key !== ACTIVATION_KEY || activationDate < oneMonthAgo) {
+          showActivationModal();
+          return false;
+        }
+        
+        return true;
+      } catch (error) {
+        showActivationModal();
+        return false;
+      }
+    }
+    
+    function showActivationModal() {
+      const activationModal = document.getElementById('activation-modal');
+      const activationOverlay = document.getElementById('activation-overlay');
+      activationModal.classList.add('active');
+      activationOverlay.classList.add('active');
+      
+      // Disable all app functionality
+      document.body.style.pointerEvents = 'none';
+      activationModal.style.pointerEvents = 'auto';
+    }
+    
+    function hideActivationModal() {
+      const activationModal = document.getElementById('activation-modal');
+      const activationOverlay = document.getElementById('activation-overlay');
+      activationModal.classList.remove('active');
+      activationOverlay.classList.remove('active');
+      
+      // Re-enable app functionality
+      document.body.style.pointerEvents = 'auto';
+    }
+    
+    function activateApp(key) {
+      if (key === ACTIVATION_KEY) {
+        const activationData = {
+          key: key,
+          activatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(ACTIVATION_STORAGE_KEY, JSON.stringify(activationData));
+        hideActivationModal();
+        showToast('✅ App activated successfully!');
+        return true;
+      } else {
+        showToast('❌ Invalid activation key', true);
+        return false;
+      }
+    }
+    
+    // Check activation on page load
+    if (!checkActivation()) {
+      return; // Stop execution if not activated
+    }
+  
     // --- API base resolution (supports Netlify static + separate backend) ---
     const urlApiBase = new URLSearchParams(location.search).get('api_base') || '';
     if (urlApiBase) {
@@ -337,5 +408,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 navToggle.classList.remove('active');
             });
         });
+    }
+    
+    // --- Activation Modal Event Listeners ---
+    const activationKeyInput = document.getElementById('activation-key-input');
+    const activateBtn = document.getElementById('activate-btn');
+    const activationCancelBtn = document.getElementById('activation-cancel-btn');
+    const activationOverlay = document.getElementById('activation-overlay');
+    
+    if (activateBtn) {
+      activateBtn.addEventListener('click', () => {
+        const key = activationKeyInput ? activationKeyInput.value.trim() : '';
+        if (key) {
+          activateApp(key);
+        } else {
+          showToast('❌ Please enter an activation key', true);
+        }
+      });
+    }
+    
+    if (activationCancelBtn) {
+      activationCancelBtn.addEventListener('click', () => {
+        hideActivationModal();
+        showToast('App requires activation to continue', true);
+      });
+    }
+    
+    if (activationOverlay) {
+      activationOverlay.addEventListener('click', () => {
+        // Prevent closing by clicking overlay - force activation
+        showToast('Please enter activation key to continue', true);
+      });
+    }
+    
+    if (activationKeyInput) {
+      activationKeyInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const key = activationKeyInput.value.trim();
+          if (key) {
+            activateApp(key);
+          }
+        }
+      });
     }
   });
