@@ -21,21 +21,40 @@ document.addEventListener('DOMContentLoaded', () => {
             cardGrid.innerHTML = '<p>Menu is currently unavailable.</p>';
             return;
         }
-        items.forEach(item => {
-            const card = document.createElement('article');
-            card.className = 'card';
-            card.dataset.id = item._id || item.id || `fallback_${item.name}`;
-            card.dataset.price = item.price;
-            card.innerHTML = `
-                <img src="${item.imageUrl || 'assets/images/card-latte.png'}" alt="${item.name}">
-                <h3 class="card-title">${item.name}</h3>
-                <p class="card-sub">${item.description || ''}</p>
-                <div class="card-cta">
-                    <span class="price">${item.price} DA</span>
-                    <button class="btn-chip btn-add-to-cart">Add to Cart</button>
-                </div>
-            `;
-            cardGrid.appendChild(card);
+        // Group items by category
+        const categoryToItems = items.reduce((acc, item) => {
+            const cat = (item.category && String(item.category).trim()) || 'Other';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(item);
+            return acc;
+        }, {});
+
+        const categories = Object.keys(categoryToItems).sort((a, b) => a.localeCompare(b));
+
+        categories.forEach(category => {
+            // Category heading
+            const heading = document.createElement('h3');
+            heading.textContent = category;
+            heading.style.cssText = 'grid-column: 1 / -1; margin: 8px 0 4px; color:#333; font-size:18px;';
+            cardGrid.appendChild(heading);
+
+            // Cards for this category
+            categoryToItems[category].forEach(item => {
+                const card = document.createElement('article');
+                card.className = 'card';
+                card.dataset.id = item._id || item.id || `fallback_${item.name}`;
+                card.dataset.price = item.price;
+                card.innerHTML = `
+                    <img src="${item.imageUrl || 'assets/images/card-latte.png'}" alt="${item.name}">
+                    <h3 class="card-title">${item.name}</h3>
+                    ${item.description ? `<p class=\"card-sub\">${item.description}</p>` : ''}
+                    <div class="card-cta">
+                        <span class="price">${item.price} DA</span>
+                        <button class="btn-chip btn-add-to-cart">Add to Cart</button>
+                    </div>
+                `;
+                cardGrid.appendChild(card);
+            });
         });
     }
 

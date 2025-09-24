@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const menuNameInput = document.getElementById('menu-name');
   const menuPriceInput = document.getElementById('menu-price');
   const menuDescriptionInput = document.getElementById('menu-description');
+  const menuCategoryInput = document.getElementById('menu-category');
   const menuImageInput = document.getElementById('menu-image');
   const logoutBtn = document.getElementById('logout-btn');
   const welcomeUser = document.getElementById('welcome-user');
@@ -447,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function addMenuItem(name, price, description = '', imageUrl = '') {
+  async function addMenuItem(name, price, description = '', imageUrl = '', category = 'Other') {
     try {
       console.log('Adding menu item:', { name, price, description, imageUrl });
       console.log('POST URL:', MENU_API_URL);
@@ -455,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch(MENU_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, price, description, imageUrl }),
+        body: JSON.stringify({ name, price, description, imageUrl, category }),
       });
       
       console.log('Response status:', response.status);
@@ -538,6 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cart-time">${item.price} DA</div>
         </div>
         ${item.imageUrl ? `<div style="margin: 8px 0;"><img src="${item.imageUrl}" alt="${item.name}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;" /></div>` : ''}
+        ${item.category ? `<div style="padding: 4px 0; color: #444; font-size: 12px;"><strong>Category:</strong> ${item.category}</div>` : ''}
         ${item.description ? `<div style="padding: 8px 0; color: #666; font-size: 14px;">${item.description}</div>` : ''}
         <div class="cart-actions">
           ${isFallback ? 
@@ -557,9 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const name = menuNameInput ? menuNameInput.value.trim() : '';
       const price = menuPriceInput ? parseFloat(menuPriceInput.value) : 0;
       const description = menuDescriptionInput ? menuDescriptionInput.value.trim() : '';
+      const category = menuCategoryInput ? menuCategoryInput.value.trim() : 'Other';
       const imageUrl = window.currentImageUrl || '';
       if (name && !isNaN(price)) {
-        addMenuItem(name, price, description, imageUrl);
+        addMenuItem(name, price, description, imageUrl, category);
         // Clear the form and image
         if (menuForm) menuForm.reset();
         if (menuImageInput) menuImageInput.value = '';

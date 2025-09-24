@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
@@ -8,8 +9,22 @@ const mongoDBConnectionString = process.env.MONGO_URL || 'mongodb://localhost:27
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
+// Basic request logging to help diagnose 404s
+app.use((req, _res, next) => {
+  console.log(`[HTTP] ${req.method} ${req.url}`);
+  next();
+});
 // Serve static frontend assets
 app.use(express.static(__dirname));
+
+// Serve a favicon to avoid 404s
+app.get('/favicon.ico', (_req, res) => {
+  try {
+    res.sendFile(path.join(__dirname, 'assets', 'images', 'icon-heart-1.svg'));
+  } catch (_) {
+    res.status(204).end();
+  }
+});
 
 // --- Connect to MongoDB ---
 if (mongoDBConnectionString) {
@@ -41,19 +56,20 @@ const menuItemSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     price: { type: Number, required: true },
     description: String,
-    imageUrl: String
+    imageUrl: String,
+    category: { type: String, default: 'Other' }
 });
 const MenuItem = mongoose.model('MenuItem', menuItemSchema);
 
 // --- In-Memory Storage for Offline Mode ---
 let inMemoryOrders = [];
 let inMemoryMenuItems = [
-  { _id: 'mem1', name: 'Espresso', price: 150, description: 'Rich and bold coffee' },
-  { _id: 'mem2', name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk' },
-  { _id: 'mem3', name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam' },
-  { _id: 'mem4', name: 'Americano', price: 120, description: 'Espresso with hot water' },
-  { _id: 'mem5', name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk' },
-  { _id: 'mem6', name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice' }
+  { _id: 'mem1', name: 'Espresso', price: 150, description: 'Rich and bold coffee', category: 'Coffee' },
+  { _id: 'mem2', name: 'Latte', price: 200, description: 'Smooth espresso with steamed milk', category: 'Coffee' },
+  { _id: 'mem3', name: 'Cappuccino', price: 180, description: 'Espresso with equal parts milk and foam', category: 'Coffee' },
+  { _id: 'mem4', name: 'Americano', price: 120, description: 'Espresso with hot water', category: 'Coffee' },
+  { _id: 'mem5', name: 'Mocha', price: 220, description: 'Espresso with chocolate and steamed milk', category: 'Coffee' },
+  { _id: 'mem6', name: 'Iced Coffee', price: 160, description: 'Cold brewed coffee over ice', category: 'Cold' }
 ];
 
 // Helper function to check if MongoDB is connected
@@ -216,7 +232,8 @@ app.post('/api/menu', async (req, res) => {
                 name: req.body.name,
                 price: req.body.price,
                 description: req.body.description || '',
-                imageUrl: req.body.imageUrl || ''
+                imageUrl: req.body.imageUrl || '',
+                category: req.body.category || 'Other'
             });
             const savedItem = await newItem.save();
             res.status(201).json(savedItem);
@@ -227,7 +244,8 @@ app.post('/api/menu', async (req, res) => {
                 name: req.body.name,
                 price: req.body.price,
                 description: req.body.description || '',
-                imageUrl: req.body.imageUrl || ''
+                imageUrl: req.body.imageUrl || '',
+                category: req.body.category || 'Other'
             };
             
             // Check if item already exists
