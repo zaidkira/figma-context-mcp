@@ -89,6 +89,57 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
+    // --- Activation Modal Event Listeners (must be set up before activation check) ---
+    const activationKeyInput = document.getElementById('activation-key-input');
+    const activateBtn = document.getElementById('activate-btn');
+    const activationCancelBtn = document.getElementById('activation-cancel-btn');
+    const activationOverlay = document.getElementById('activation-overlay');
+    
+    console.log('Setting up activation event listeners...');
+    console.log('Activate button:', activateBtn);
+    console.log('Activation input:', activationKeyInput);
+    
+    if (activateBtn) {
+      activateBtn.addEventListener('click', () => {
+        console.log('Activate button clicked!');
+        const key = activationKeyInput ? activationKeyInput.value.trim() : '';
+        console.log('Entered key:', key);
+        if (key) {
+          activateApp(key);
+        } else {
+          alert('❌ Please enter an activation key');
+        }
+      });
+    } else {
+      console.error('❌ Activate button not found!');
+    }
+    
+    if (activationCancelBtn) {
+      activationCancelBtn.addEventListener('click', () => {
+        hideActivationModal();
+        alert('App requires activation to continue');
+      });
+    }
+    
+    if (activationOverlay) {
+      activationOverlay.addEventListener('click', () => {
+        // Prevent closing by clicking overlay - force activation
+        alert('Please enter activation key to continue');
+      });
+    }
+    
+    if (activationKeyInput) {
+      activationKeyInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          console.log('Enter key pressed!');
+          const key = activationKeyInput.value.trim();
+          if (key) {
+            activateApp(key);
+          }
+        }
+      });
+    }
+
     // Check activation on page load
     if (!checkActivation()) {
       return; // Stop execution if not activated
@@ -467,47 +518,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 navToggle.classList.remove('active');
             });
         });
-    }
-    
-    // --- Activation Modal Event Listeners ---
-    const activationKeyInput = document.getElementById('activation-key-input');
-    const activateBtn = document.getElementById('activate-btn');
-    const activationCancelBtn = document.getElementById('activation-cancel-btn');
-    const activationOverlay = document.getElementById('activation-overlay');
-    
-    if (activateBtn) {
-      activateBtn.addEventListener('click', () => {
-        const key = activationKeyInput ? activationKeyInput.value.trim() : '';
-        if (key) {
-          activateApp(key);
-        } else {
-          alert('❌ Please enter an activation key');
-        }
-      });
-    }
-    
-    if (activationCancelBtn) {
-      activationCancelBtn.addEventListener('click', () => {
-        hideActivationModal();
-        alert('App requires activation to continue');
-      });
-    }
-    
-    if (activationOverlay) {
-      activationOverlay.addEventListener('click', () => {
-        // Prevent closing by clicking overlay - force activation
-        alert('Please enter activation key to continue');
-      });
-    }
-    
-    if (activationKeyInput) {
-      activationKeyInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          const key = activationKeyInput.value.trim();
-          if (key) {
-            activateApp(key);
-          }
-        }
-      });
     }
   });
