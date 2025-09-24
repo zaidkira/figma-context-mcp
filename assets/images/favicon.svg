@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <style>
+      .bg{fill:#e08674;stroke:#15367a;stroke-width:16;stroke-linejoin:round}
+      .panel{fill:#fde3c5;stroke:#15367a;stroke-width:16;stroke-linejoin:round}
+      .cup{fill:#f7c14d;stroke:#15367a;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+    </style>
+  </defs>
+  <rect x="16" y="56" width="224" height="144" rx="20" class="bg"/>
+  <rect x="36" y="76" width="184" height="104" rx="14" class="panel"/>
+  <path class="cup" d="M84 156h72a20 20 0 0 0 0-40h-8v-12H92v44a20 20 0 0 0 20 20h40c9 0 17-2 22-6"/>
+  <path class="cup" d="M96 168h64"/>
+</svg>
+

@@ -20,7 +20,7 @@ app.use(express.static(__dirname));
 // Serve a favicon to avoid 404s
 app.get('/favicon.ico', (_req, res) => {
   try {
-    res.sendFile(path.join(__dirname, 'assets', 'images', 'icon-heart-1.svg'));
+    res.sendFile(path.join(__dirname, 'assets', 'images', 'favicon.svg'));
   } catch (_) {
     res.status(204).end();
   }
