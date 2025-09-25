@@ -1,7 +1,7 @@
 {
   "name": "figma-context-mcp",
   "version": "1.0.0",
-  "description": "",
+  "description": "Coffee Shop Ordering System - A modern web application for coffee shop management",
   "main": "server.js",
     "scripts": {
     "start": "node server.js",
@@ -12,8 +12,8 @@
     "type": "git",
     "url": "git+https://github.com/zaidkira/figma-context-mcp.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["coffee", "shop", "ordering", "system", "dashboard", "management"],
+  "author": "Zaid Kira",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/zaidkira/figma-context-mcp/issues"
