@@ -5,6 +5,58 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // Check activation validity
+  const ACTIVATION_STORAGE_KEY = 'dashboard_activation';
+  const VALID_ACTIVATION_KEY = 'COFFEE2024';
+  
+  function checkActivation() {
+    const activationData = localStorage.getItem(ACTIVATION_STORAGE_KEY);
+    if (!activationData) {
+      alert('❌ Activation required. Please log in again.');
+      localStorage.removeItem('dashboard_logged_in');
+      localStorage.removeItem('dashboard_user');
+      window.location.href = 'login.html';
+      return false;
+    }
+    
+    try {
+      const { key, activatedAt } = JSON.parse(activationData);
+      const now = new Date();
+      const activationDate = new Date(activatedAt);
+      const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      
+      if (key !== VALID_ACTIVATION_KEY || activationDate < oneMonthAgo) {
+        alert('❌ Activation expired or invalid. Please log in again.');
+        localStorage.removeItem('dashboard_logged_in');
+        localStorage.removeItem('dashboard_user');
+        localStorage.removeItem(ACTIVATION_STORAGE_KEY);
+        window.location.href = 'login.html';
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      alert('❌ Invalid activation data. Please log in again.');
+      localStorage.removeItem('dashboard_logged_in');
+      localStorage.removeItem('dashboard_user');
+      localStorage.removeItem(ACTIVATION_STORAGE_KEY);
+      window.location.href = 'login.html';
+      return false;
+    }
+  }
+
+  // Check activation on dashboard load
+  if (!checkActivation()) {
+    return;
+  }
+
+  // Check activation every hour to catch expiry
+  setInterval(() => {
+    if (!checkActivation()) {
+      return;
+    }
+  }, 3600000); // Check every hour (3600000 ms)
+
   // --- Element Selectors ---
   const grid = document.getElementById('orders-grid');
   const menuForm = document.getElementById('menu-form');
@@ -613,6 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('dashboard_logged_in');
       localStorage.removeItem('dashboard_user');
+      localStorage.removeItem(ACTIVATION_STORAGE_KEY);
       window.location.href = 'login.html';
     });
   }
