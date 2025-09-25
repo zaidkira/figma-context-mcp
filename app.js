@@ -71,6 +71,41 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Re-enable app functionality
       document.body.style.pointerEvents = 'auto';
+      
+      // Add a floating activation button for easy access
+      addFloatingActivationButton();
+    }
+    
+    function addFloatingActivationButton() {
+      // Remove existing button if any
+      const existingBtn = document.getElementById('floating-activation-btn');
+      if (existingBtn) existingBtn.remove();
+      
+      // Create floating activation button
+      const floatingBtn = document.createElement('button');
+      floatingBtn.id = 'floating-activation-btn';
+      floatingBtn.innerHTML = '🔑 Activate';
+      floatingBtn.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      
+      floatingBtn.addEventListener('click', () => {
+        showActivationModal();
+        floatingBtn.remove();
+      });
+      
+      document.body.appendChild(floatingBtn);
     }
     
     function activateApp(key) {
@@ -116,8 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (activationCancelBtn) {
       activationCancelBtn.addEventListener('click', () => {
+        // Hide modal but show floating button for re-activation
         hideActivationModal();
-        alert('App requires activation to continue');
+        alert('App requires activation. Click the "🔑 Activate" button to continue.');
       });
     }
     
