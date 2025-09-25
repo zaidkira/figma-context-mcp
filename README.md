@@ -238,7 +238,7 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email support@coffeeshop.com or create an issue in the GitHub repository.
+For support, email ammizaidghost@gmail.com or create an issue in the GitHub repository.
 
 ---
 
