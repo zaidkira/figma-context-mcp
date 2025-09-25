@@ -176,7 +176,7 @@
   <div class="login-container">
     <div class="login-header">
       <h1 class="login-title">Dashboard Login</h1>
-      <p class="login-subtitle">Enter your credentials to access the barista dashboard</p>
+      <p class="login-subtitle">Enter your credentials and activation key to access the barista dashboard</p>
     </div>
 
     <div class="error-message" id="error-message"></div>
@@ -192,6 +192,11 @@
         <input type="password" id="password" class="form-input" required>
       </div>
 
+      <div class="form-group">
+        <label class="form-label" for="activation-key">Activation Key</label>
+        <input type="text" id="activation-key" class="form-input" placeholder="Enter activation key" required>
+      </div>
+
       <button type="submit" class="login-btn" id="login-btn">
         Login to Dashboard
       </button>
@@ -203,11 +208,40 @@
   </div>
 
   <script>
-    // Default credentials (you can change these)
+    // Default credentials and activation key
     const VALID_CREDENTIALS = {
       username: 'admin',
-      password: 'zaid'
+      password: 'zaid',
+      activationKey: 'COFFEE2024'
     };
+
+    const ACTIVATION_STORAGE_KEY = 'dashboard_activation';
+
+    // Check if activation is valid
+    function checkActivation() {
+      const activationData = localStorage.getItem(ACTIVATION_STORAGE_KEY);
+      if (!activationData) return false;
+      
+      try {
+        const { key, activatedAt } = JSON.parse(activationData);
+        const now = new Date();
+        const activationDate = new Date(activatedAt);
+        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        
+        return key === VALID_CREDENTIALS.activationKey && activationDate >= oneMonthAgo;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    // Store activation data
+    function storeActivation(key) {
+      const activationData = {
+        key: key,
+        activatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(ACTIVATION_STORAGE_KEY, JSON.stringify(activationData));
+    }
 
     const form = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
@@ -218,6 +252,7 @@
       
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
+      const activationKey = document.getElementById('activation-key').value;
 
       // Show loading state
       loginBtn.textContent = 'Logging in...';
@@ -227,8 +262,14 @@
       // Simulate a small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Check credentials
-      if (username === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
+      // Check credentials and activation key
+      if (username === VALID_CREDENTIALS.username && 
+          password === VALID_CREDENTIALS.password && 
+          activationKey === VALID_CREDENTIALS.activationKey) {
+        
+        // Store activation data
+        storeActivation(activationKey);
+        
         // Store login state
         localStorage.setItem('dashboard_logged_in', 'true');
         localStorage.setItem('dashboard_user', username);
@@ -237,7 +278,14 @@
         window.location.href = 'dashboard.html';
       } else {
         // Show error
-        errorMessage.textContent = 'Invalid username or password. Please try again.';
+        let errorText = 'Invalid credentials or activation key. Please try again.';
+        if (username !== VALID_CREDENTIALS.username || password !== VALID_CREDENTIALS.password) {
+          errorText = 'Invalid username or password.';
+        } else if (activationKey !== VALID_CREDENTIALS.activationKey) {
+          errorText = 'Invalid activation key.';
+        }
+        
+        errorMessage.textContent = errorText;
         errorMessage.style.display = 'block';
         
         // Reset button
@@ -246,8 +294,8 @@
       }
     });
 
-    // Check if already logged in
-    if (localStorage.getItem('dashboard_logged_in') === 'true') {
+    // Check if already logged in and activation is valid
+    if (localStorage.getItem('dashboard_logged_in') === 'true' && checkActivation()) {
       window.location.href = 'dashboard.html';
     }
   </script>
