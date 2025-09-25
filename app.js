@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activationDate = new Date(activatedAt);
         const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
         
-        console.log('Key:', key, 'Expected:', ACTIVATION_KEY);
+        console.log('Activation key provided');
         console.log('Activation date:', activationDate);
         console.log('One month ago:', oneMonthAgo);
         console.log('Is expired?', activationDate < oneMonthAgo);
@@ -61,6 +61,23 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         console.error('❌ Modal elements not found!');
       }
+
+      // Show header activation button
+      showHeaderActivationButton();
+    }
+
+    function showHeaderActivationButton() {
+      const headerActivationBtn = document.getElementById('header-activation-btn');
+      if (headerActivationBtn) {
+        headerActivationBtn.style.display = 'flex';
+      }
+    }
+
+    function hideHeaderActivationButton() {
+      const headerActivationBtn = document.getElementById('header-activation-btn');
+      if (headerActivationBtn) {
+        headerActivationBtn.style.display = 'none';
+      }
     }
     
     function hideActivationModal() {
@@ -71,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Re-enable app functionality
       document.body.style.pointerEvents = 'auto';
+      
+      // Hide header activation button
+      hideHeaderActivationButton();
       
       // Add a floating activation button for easy access
       addFloatingActivationButton();
@@ -107,6 +127,78 @@ document.addEventListener('DOMContentLoaded', () => {
       
       document.body.appendChild(floatingBtn);
     }
+
+    function showPersistentActivationNotice() {
+      // Remove any existing notice
+      const existingNotice = document.getElementById('persistent-activation-notice');
+      if (existingNotice) {
+        existingNotice.remove();
+      }
+
+      // Show header activation button
+      showHeaderActivationButton();
+
+      // Create persistent activation notice
+      const notice = document.createElement('div');
+      notice.id = 'persistent-activation-notice';
+      notice.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #9E1C08, #B91C1C);
+        color: white;
+        padding: 12px 20px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 14px;
+        z-index: 10001;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      `;
+
+      const message = document.createElement('span');
+      message.textContent = '🔒 App requires activation to continue';
+      
+      const retryButton = document.createElement('button');
+      retryButton.textContent = 'Retry Activation';
+      retryButton.style.cssText = `
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      `;
+      
+      retryButton.addEventListener('mouseenter', () => {
+        retryButton.style.background = 'rgba(255,255,255,0.3)';
+      });
+      
+      retryButton.addEventListener('mouseleave', () => {
+        retryButton.style.background = 'rgba(255,255,255,0.2)';
+      });
+      
+      retryButton.addEventListener('click', () => {
+        showActivationModal();
+        notice.remove();
+        // Remove padding when notice is removed
+        document.body.style.paddingTop = '0';
+      });
+
+      notice.appendChild(message);
+      notice.appendChild(retryButton);
+      document.body.appendChild(notice);
+
+      // Add some padding to body to account for the fixed notice
+      document.body.style.paddingTop = '50px';
+    }
     
     function activateApp(key) {
       if (key === ACTIVATION_KEY) {
@@ -117,6 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(ACTIVATION_STORAGE_KEY, JSON.stringify(activationData));
         hideActivationModal();
         alert('✅ App activated successfully!');
+        // Initialize the app after successful activation
+        initializeApp();
         return true;
       } else {
         alert('❌ Invalid activation key');
@@ -138,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activateBtn.addEventListener('click', () => {
         console.log('Activate button clicked!');
         const key = activationKeyInput ? activationKeyInput.value.trim() : '';
-        console.log('Entered key:', key);
+        console.log('Activation key provided');
         if (key) {
           activateApp(key);
         } else {
@@ -151,9 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (activationCancelBtn) {
       activationCancelBtn.addEventListener('click', () => {
-        // Hide modal but show floating button for re-activation
-        hideActivationModal();
-        alert('App requires activation. Click the "🔑 Activate" button to continue.');
+        // Keep modal open and show persistent activation notice
+        showPersistentActivationNotice();
       });
     }
     
@@ -161,6 +254,14 @@ document.addEventListener('DOMContentLoaded', () => {
       activationOverlay.addEventListener('click', () => {
         // Prevent closing by clicking overlay - force activation
         alert('Please enter activation key to continue');
+      });
+    }
+
+    // Header activation button
+    const headerActivationBtn = document.getElementById('header-activation-btn');
+    if (headerActivationBtn) {
+      headerActivationBtn.addEventListener('click', () => {
+        showActivationModal();
       });
     }
     
@@ -176,10 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Check activation on page load
-    if (!checkActivation()) {
-      return; // Stop execution if not activated
-    }
+    // Initialize app function - contains all initialization logic
+    function initializeApp() {
+      console.log('🚀 Initializing app...');
     
     // Check activation every hour to catch expiry
     setInterval(() => {
@@ -201,7 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const { activatedAt } = JSON.parse(activationData);
           const now = new Date();
           const activationDate = new Date(activatedAt);
-          const expiryTime = new Date(activationDate.getFullYear(), activationDate.getMonth() + 1, activationDate.getDate()); // 1 month from activation
+          const expiryTime = new Date(activationDate.getTime());
+          expiryTime.setMonth(activationDate.getMonth() + 1); // 1 month from activation
           const timeLeft = expiryTime - now;
           
           if (timeLeft > 0) {
@@ -554,5 +655,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 navToggle.classList.remove('active');
             });
         });
+      }
+    }
+
+    // Check activation on page load
+    if (!checkActivation()) {
+      return; // Stop execution if not activated
+    } else {
+      // If activation is successful, initialize the app
+      initializeApp();
     }
   });
